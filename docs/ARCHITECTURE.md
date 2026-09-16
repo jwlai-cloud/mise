@@ -1,13 +1,20 @@
 # Architecture — current state
 
 Snapshot of what exists now. Replace, don't append.
-Last updated 2026-09-16.
+Last updated 2026-09-16 (session 2, after the hot graph).
 
 ## System
 
 ```
- phone / webcam ──frames──▶ vision loop ──▶ CookState cache ──▶ MCP tools ──▶ Alexa+ (voice)
-  ~0.3 Hz, own clock         (slow, async)     state.py          <500ms
+ phone / webcam ──frames──▶ HOT GRAPH ──▶ CookState cache ──▶ MCP tools ──▶ Alexa+ (voice)
+  ~0.3 Hz, own clock        (agents.py)      state.py          <500ms
+
+        the hot graph, on the slow plane only:
+
+          perceive ──┬──▶ critique ──┐      critique runs ONLY near the gate
+                     │  (conditional) │     or under low confidence
+                     └──▶ risk ───────┼──▶ arbitrate ──▶ STORE
+                        (every frame) │     (deterministic, sole writer)
                                                    │
                                                    ├──▶ ui://mise/panel  (polls panel_state every 2s)
                                                    │
@@ -26,6 +33,7 @@ Last updated 2026-09-16.
 | MCP server | `src/mise/server.py` | FastMCP, streamable HTTP, stateless, JSON responses. Five tools + the `ui://` resource. |
 | Panel | `ui/panel.html` | Dual transport: JSON-RPC over `postMessage` in an MCP host, plain fetch in a browser. |
 | Vision loop | `src/mise/vision.py` | `ScenarioSource` (scripted keyframes, all four verdicts, no model) and `ingest_frame()` (real frames). Exactly one of them owns `STORE` at a time. |
+| Hot graph | `src/mise/agents.py` | The Strands multi-agent loop: perception, a conditional critic that may only lower confidence, a parallel risk node, and a deterministic arbiter that is the single writer. Runs offline against `ScriptedModel`. Emits the `mise.frame` span. See ADR-0005. |
 | Perception | `src/mise/perception.py` | The only place a model runs. `ScriptedVision` for offline tests, `BedrockVision` for real frames. Validates every reading and clamps confidence to what the model admitted it could see. |
 | Memory | `src/mise/memory.py` | AgentCore Memory (user-preference strategy, namespace `cook/{actorId}/hob/`). Local JSON fallback. |
 | Policy | `src/mise/policy.py` | Local mirror of the four Dogwood rules; session ledger of gate observations, refusals, corrections. |
@@ -68,6 +76,14 @@ Resource: `ui://mise/panel`, mime `text/html;profile=mcp-app`.
   ceiling that is re-applied in code, because a prompt asking for care is a request and
   a lookup table is a guarantee. It cannot catch a model that misreports the view —
   that is the residual risk, and it is where a wrong `proceed` will come from.
+- **Two evals, two objects.** `evals/abstention.py` scores the *pan* over a labelled
+  corpus, offline. `evals/trajectory.py` scores the *agent* over real OTEL traces.
+  AgentCore Evaluations does the second and cannot do the first — its
+  `StartBatchEvaluation` takes CloudWatch log groups, never a corpus.
+- **Strands traces mechanics, not meaning.** Its spans carry `gen_ai.*` tokens and
+  tool names and none of the domain values, so the graph emits one `mise.frame`
+  span with doneness, both confidences, risk and whether it wrote. Without it a
+  trajectory evaluator sees the shape of a run and nothing about what it decided.
 - **A frame's timestamp is when it was taken, not when it was stored.** `STORE.write()`
   takes `updated_at` so `is_stale` measures the age of the *view*. Stamping the write
   would make a 2-3s vision call look like 2-3s of freshness it never had.

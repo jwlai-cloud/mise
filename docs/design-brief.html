@@ -362,10 +362,28 @@
     </div>
 
     <div class="note warn">
-      <strong>Still not executed: the model itself.</strong> <code>BedrockVision.judge</code> is
-      written against a call shape verified in botocore's own service model, but has never run —
-      blocked on an unsubmitted Anthropic use-case form and an IAM grant, neither of which is code.
-      Policies are ready in <code>infra/</code>. Nothing is deployed to AWS.
+      <strong>The multi-agent graph runs, offline, in CI.</strong> A real
+      <code>strands.multiagent</code> Graph with three LLM agents and a deterministic arbiter,
+      driven by a scripted model provider so the topology and the conditional edge are executed
+      by tests rather than asserted about. The proof is in the execution order: a clear frame runs
+      <code>perceive, risk</code>; a steamed one runs <code>perceive, risk, critique</code>.
+      <code>MISE_VISION_BACKEND=graph</code> swaps it in behind the existing interface.
+    </div>
+
+    <div class="note warn">
+      <strong>Still not executed: a real model.</strong> <code>BedrockModel</code> and
+      <code>BedrockVision.judge</code> are written against a call shape verified in botocore's own
+      service model, but neither has ever been invoked — blocked on an unsubmitted Anthropic
+      use-case form and an IAM grant, neither of which is code. Policies and a preflight that names
+      the exact missing action are in <code>infra/</code>. Nothing is deployed to AWS.
+    </div>
+
+    <div class="note ok">
+      <strong>Two evals, two objects.</strong> <code>evals/abstention.py</code> scores the
+      <em>pan</em> over a labelled corpus, offline. <code>evals/trajectory.py</code> scores the
+      <em>agent</em> over real OTEL traces — the critic ran near the gate and only there, danger was
+      never gated, confidence only ever fell. AgentCore Evaluations does the second and cannot do
+      the first: <code>StartBatchEvaluation</code> takes CloudWatch log groups, never a corpus.
     </div>
 
     <div class="note bad">
@@ -482,31 +500,31 @@
             <td>PerceptionAgent</td>
             <td>every frame tick</td>
             <td>Needs a vision model and structured output. The only node that must call Bedrock every tick. <b>The seam around it is built</b>: <code>perception.py</code> validates every reading, clamps confidence to what the model admitted it could see, and drops the frame rather than guessing. Only the Strands <code>Graph</code> wrapper and the first real invocation are missing.</td>
-            <td><span class="tag t-plan">seam built</span></td>
+            <td><span class="tag t-run">runs</span></td>
           </tr>
           <tr>
             <td>CriticAgent</td>
             <td>conditional edge</td>
             <td><b>The node that earns the multi-agent claim.</b> Traversed only when confidence &lt; 0.75 or doneness is within ±0.1 of the gate — the boundary where a mistake is expensive. Asked "what would make this judgment wrong?"; dissent forces <code>refuse</code>. Cost stays flat because it rarely fires.</td>
-            <td><span class="tag t-gap">unbuilt</span></td>
+            <td><span class="tag t-run">runs</span></td>
           </tr>
           <tr>
             <td>RiskAgent</td>
             <td>every frame tick</td>
             <td>Separate failure domain. Danger must never be gated on the perception agent's confidence — invariant 3. Runs in parallel, not downstream.</td>
-            <td><span class="tag t-gap">unbuilt</span></td>
+            <td><span class="tag t-run">runs</span></td>
           </tr>
           <tr>
             <td>Arbiter</td>
             <td>join of the three</td>
             <td><b>Deliberately not an agent.</b> Deterministic merge, single author of the cache, unit-testable with no model in the loop.</td>
-            <td><span class="tag t-gap">unbuilt</span></td>
+            <td><span class="tag t-run">runs</span></td>
           </tr>
           <tr>
             <td>CalibrationAgent</td>
             <td><code>record_correction</code></td>
             <td><b>Weakest case, stated honestly.</b> Today this is <code>gate ± 0.15</code> in <code>memory.py</code> and a function would do. It becomes an agent only when it reasons over Memory: "is the gate wrong, or was this dish different?"</td>
-            <td><span class="tag t-run">function runs</span></td>
+            <td><span class="tag t-plan">function, not yet an agent</span></td>
           </tr>
           <tr>
             <td>ChoreographyAgent</td>
@@ -879,14 +897,16 @@ when { count(context.corrections_for_step) &gt;= 3 since within 3600 seconds };<
       in three places," which invites the question of how many of the three are deployed.
     </p>
     <div class="note bad">
-      <strong>That risk is now retired.</strong> It was spending three weeks deepening a scaffold
-      whose differentiating verdict had never appeared on screen. It has now appeared, been
-      filmed, and been locked behind regression tests. <strong>The biggest remaining risk is
-      calibration:</strong> a clear-looking frame of a genuinely ambiguous pan carries a 0.95
+      <strong>Two risks retired, one sharpened.</strong> The differentiating verdict has appeared,
+      been filmed, and been locked behind regression tests; the agent it was supposed to be driven
+      by now exists and executes in CI. <strong>The biggest remaining risk is calibration:</strong> a clear-looking frame of a genuinely ambiguous pan carries a 0.95
       confidence ceiling, the clamp cannot catch a model that misreports the view, and that is
       where every wrong <code>proceed</code> this system ever gives will come from. Only a real
       labelled corpus and the risk-coverage sweep will find it — which makes the two AWS blockers
-      the critical path, not the code.
+      the critical path, not the code. Every threshold in the system is currently a defensible
+      guess: the 0.6 confidence floor, the view-ceiling table, and the critic's 0.75 / 0.1
+      triggers. None is measured. Three evenings of labelled frames turns all of them from
+      assertions into numbers, and nothing else does.
     </div>
   </section>
 
