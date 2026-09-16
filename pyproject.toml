@@ -4,11 +4,11 @@ version = "0.1.0"
 description = "The cooking assistant that tells you to wait. An Alexa+ MCP server that watches the pan."
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
-# mcp is capped below 2.0 deliberately: mcp 2.x removed mcp.server.fastmcp
-# (FastMCP was renamed MCPServer), so an uncapped >=1.27 resolves to a release
-# that cannot import this server. AgentCore Runtime's own MCP guide is still on
-# the 1.x FastMCP API, so 1.x is also the deployment target.
-dependencies = ["mcp>=1.27,<2", "pydantic>=2", "uvicorn>=0.30", "starlette>=0.37"]
+# mcp 2.x: FastMCP became MCPServer. The upper cap is no longer ours - it is
+# strands-agents 1.56, which requires mcp<2.2, so this lands on 2.1.x. At the
+# 2025-11-25 the track requires, a 2.x server puts identical bytes on the wire;
+# what it adds is answering the 2026-07-28 era too. mcp 2.x needs pydantic>=2.12.
+dependencies = ["mcp>=2.1,<2.2", "pydantic>=2.12", "uvicorn>=0.30", "starlette>=0.37"]
 
 [project.optional-dependencies]
 # The AgentCore layers degrade to local fallbacks when these are absent, which

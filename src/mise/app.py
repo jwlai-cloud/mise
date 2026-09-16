@@ -166,7 +166,8 @@ async def ingest(request):
                          "source": "camera" if _live_camera else SOURCE.name})
 
 
-app = mcp.streamable_http_app()
+app = mcp.streamable_http_app(stateless_http=True, json_response=True,
+                              host="0.0.0.0")
 for path, handler in (
     ("/ingest", ingest),
     ("/dev/state", dev_state),

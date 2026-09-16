@@ -325,22 +325,22 @@ def compare(names: list[str], dataset: str = DATASET) -> None:
 
 
 def enable_otel_tracing() -> bool:
-    """Send Strands spans to Opik over OTLP/HTTP. Verified against Opik's own
-    Strands integration page; the endpoint is /api/v1/private/otel and the HTTP
-    exporter is mandatory - the gRPC one errors.
+    """Send Strands spans to Opik over OTLP/HTTP.
 
-    ponytail: this belongs next to the graph, not in the eval pack. It is here
-    so there is exactly one place to read about Opik. Move it to agents.py when
-    the graph lands.
+    Opik's OTLP endpoint is /api/v1/private/otel and the HTTP exporter is
+    mandatory - the gRPC one errors. Set OTEL_EXPORTER_OTLP_ENDPOINT to it.
+
+    The wiring itself lives in mise.agents.enable_tracing, next to the graph
+    that emits the spans; this is the thin Opik-side check so there is still one
+    place to read about Opik.
     """
-    endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-    if not endpoint:
+    if not os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT"):
         return False
     try:
-        from strands.telemetry import StrandsTelemetry
-    except ImportError:
+        from mise.agents import enable_tracing
+    except ImportError:              # strands not installed; nothing emits spans
         return False
-    StrandsTelemetry().setup_otlp_exporter()
+    enable_tracing()
     return True
 
 

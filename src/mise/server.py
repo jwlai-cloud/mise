@@ -9,11 +9,13 @@ and lands in state.STORE.
 """
 from __future__ import annotations
 
+import functools
+import threading
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from pydantic import BaseModel, Field
 
 from .gate import decide
@@ -26,19 +28,39 @@ from .state import STORE
 PANEL_URI = "ui://mise/panel"
 UI_DIR = Path(__file__).resolve().parents[2] / "ui"
 
-mcp = FastMCP(
+mcp = MCPServer(
     "mise",
     instructions=(
         "Mise watches a pan through a camera and decides whether the cook may move "
         "to the next step. Prefer check_doneness over guessing. If it returns "
         "'refuse', say so plainly - do not invent an answer about food safety."
     ),
-    stateless_http=True,
-    json_response=True,
 )
+# stateless_http and json_response moved off the constructor in mcp 2.x; they
+# are now arguments to streamable_http_app() / run(). See app.py.
 
 # Session state. One cook at a time; a real deployment keys this per user.
 _session: dict[str, Any] = {"recipe": None, "step_index": 0}
+
+# mcp 2.x runs a SYNC tool handler on a worker thread instead of inline on the
+# event loop, so tool bodies are now genuinely concurrent: the panel polls
+# panel_state every two seconds while a voice turn may be inside check_doneness.
+# That makes read-modify-write on _session and LEDGER a real race, where 1.x
+# serialised them for us as a side effect of the event loop.
+#
+# STORE carries its own lock. This one covers the rest.
+# ponytail: one coarse RLock. The critical sections are microseconds of dict
+# work, so contention is not a concern; split it only if a tool does real work.
+_SESSION_LOCK = threading.RLock()
+
+
+def _serialized(fn):
+    """Run this tool body under the session lock."""
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        with _SESSION_LOCK:
+            return fn(*args, **kwargs)
+    return wrapper
 
 # What the voice says when rule 2 has already spoken this verdict recently.
 # Each verdict keeps its own register: a shortened refusal is still a refusal.
@@ -84,6 +106,7 @@ def _panel_meta(visibility: list[str] | None = None) -> dict[str, Any]:
     description="Begin a recipe. Call this before check_doneness. Returns the first instruction.",
     meta=_panel_meta(),
 )
+@_serialized
 def start_recipe(slug: str = "soffritto") -> dict[str, Any]:
     recipe = REGISTRY.get(slug)
     if recipe is None:
@@ -108,6 +131,7 @@ def start_recipe(slug: str = "soffritto") -> dict[str, Any]:
     meta=_panel_meta(),
     annotations={"readOnlyHint": True, "openWorldHint": True},
 )
+@_serialized
 def check_doneness() -> DecisionOut:
     recipe = REGISTRY.get(_session["recipe"] or "")
     if recipe is None:
@@ -154,6 +178,7 @@ def check_doneness() -> DecisionOut:
     description="Move to the next step. Refuses unless check_doneness currently returns 'proceed'.",
     meta=_panel_meta(),
 )
+@_serialized
 def advance_step() -> dict[str, Any]:
     recipe = REGISTRY.get(_session["recipe"] or "")
     if recipe is None:
@@ -185,6 +210,7 @@ def advance_step() -> dict[str, Any]:
     meta=_panel_meta(visibility=["app"]),
     annotations={"readOnlyHint": True},
 )
+@_serialized
 def panel_state() -> dict[str, Any]:
     recipe = REGISTRY.get(_session["recipe"] or "")
     state = STORE.read()
@@ -210,6 +236,7 @@ def panel_state() -> dict[str, Any]:
     ),
     meta=_panel_meta(),
 )
+@_serialized
 def record_correction(direction: str, note: str = "") -> dict[str, Any]:
     recipe = REGISTRY.get(_session["recipe"] or "")
     if recipe is None or direction not in ("too_early", "too_late"):
@@ -240,4 +267,7 @@ def panel() -> str:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http")
+    # host="0.0.0.0" is load-bearing, not tidiness: 2.x defaults to 127.0.0.1,
+    # and AgentCore Runtime expects the container reachable on 0.0.0.0:8000/mcp.
+    mcp.run(transport="streamable-http", host="0.0.0.0",
+            stateless_http=True, json_response=True)
