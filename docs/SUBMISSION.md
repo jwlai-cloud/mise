@@ -252,12 +252,23 @@ and that is precisely where a wrong "proceed" will come from.
 - **Demo video:** [SPIKE/FINAL — under 3 minutes, YouTube or Vimeo, public]
 
 ```bash
-pip install -e .
-PYTHONPATH=src uvicorn mise.app:app --port 8000
-# then open http://localhost:8000/dev/control and press 1-4
+git clone https://github.com/jwlai-cloud/mise.git && cd mise
+python3 -m venv .venv && .venv/bin/pip install -e .
+PYTHONPATH=src .venv/bin/python -m uvicorn mise.app:app --port 8000
 ```
 
-Four buttons, one per verdict. No credentials, no camera, no model required.
+Open <http://localhost:8000/dev/control>, press **1 2 3 4**, watch
+<http://localhost:8000/dev/panel> beside it. Four buttons, one per verdict, **no AWS
+account, no camera, no model, no API key**. Walked from a clean clone on a machine with
+no credentials; the README's "Judges start here" block is the same sequence.
+
+**Press 2.** The progress meter sits visibly past the gate marker and the verdict still
+reads CAN'T TELL, with `confidence 0.22 / 0.60 needed` underneath. A system that guessed
+would say GO there. That one screen is the submission.
+
+For a real MCP client: `npx @modelcontextprotocol/inspector` against
+`http://localhost:8000/mcp` (spec 2025-11-25, streamable HTTP). A browser hitting `/mcp`
+returns 406 — that is the protocol requiring an `Accept` header, not a fault.
 
 ---
 

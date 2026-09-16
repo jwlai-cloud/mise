@@ -8,6 +8,66 @@ Every recipe app pushes you forward through steps. Mise holds you back, because 
 can see the pan. Ask *"can I add the garlic yet?"* and it answers
 **"Not yet — they're still firm at the edges. About ninety seconds."**
 
+---
+
+## Judges start here — 60 seconds, no credentials
+
+No AWS account, no camera, no model, no API key. Four verdicts, four buttons.
+
+```bash
+git clone https://github.com/jwlai-cloud/mise.git && cd mise
+python3 -m venv .venv && .venv/bin/pip install -e .
+PYTHONPATH=src .venv/bin/python -m uvicorn mise.app:app --port 8000
+```
+
+Then open **<http://localhost:8000/dev/control>** and press **1 2 3 4**, watching
+**<http://localhost:8000/dev/panel>** beside it.
+
+| Key | What the panel does | Why it matters |
+|---|---|---|
+| **1** | NOT YET climbing to **GO** | the ordinary case |
+| **2** | **CAN'T TELL** — steam on the lens | the meter is *past* the gate marker and it still refuses. A guessing system says GO here |
+| **3** | **CAN'T TELL** — frames stopped | the panel dims and counts the seconds since it last saw the pan |
+| **4** | **OFF THE HEAT** | overrides the cooldown *and* a confidence too low to judge on |
+
+**Button 2 is the whole submission.** The perception is prior art and we say so
+([ADR-0002](docs/adr/0002-positioning-against-prior-art.md)); what does not exist
+anywhere else is readiness as a *refusable* tool contract.
+
+### If you want to drive it as a real MCP client
+
+The server is streamable HTTP at `http://localhost:8000/mcp`, spec **2025-11-25**.
+A browser will return `406` — that is the protocol requiring an `Accept` header, not a
+fault.
+
+```bash
+npx @modelcontextprotocol/inspector      # then connect to http://localhost:8000/mcp
+```
+
+Call `check_doneness` after pressing a button. `advance_step` will refuse unless a
+*passing observation* was made in the last twenty seconds.
+
+### What you cannot try, and why
+
+**Talking to a real Echo.** The Alexa+ MCP Toolkit publish path is a US-only private
+preview; the rules permit a simulated experience and this is it. Separately, Alexa's only
+camera-facing developer API is the Object Detection Sensor API — an Echo Show will not
+hand frames to a third-party server, so the camera is your own phone
+([ADR-0002](docs/adr/0002-positioning-against-prior-art.md)).
+
+**A live pan.** `perception.py` is built, validated and tested against a call shape
+verified in botocore's service model, but has never been invoked — blocked on an
+account-level Bedrock entitlement form and an IAM grant. `docs/PRODUCT-FEEDBACK.md` marks
+what runs versus what is only designed, tool by tool.
+
+```bash
+python3 tests/test_gate.py tests/test_policy.py tests/test_steering.py \
+        tests/test_scenarios.py tests/test_refusal_contract.py \
+        tests/test_abstention.py tests/test_ingest.py
+```
+
+---
+
 ## How it works
 
 ```
