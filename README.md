@@ -66,27 +66,49 @@ actually matters — not accuracy, but whether it declines *exactly* when its
 perception is unreliable:
 
 ```
-frames              10
+frames               10
 answered             7  (coverage 70%)
-  WRONG              0   <- risk 0.0%
+  WRONG              0   <- selective risk 0.0%
 abstained            3
-  justified          1
-  unnecessary        2
-abstention precision 33%
+  justified          3   (estimate was off by >0.15)
+  unnecessary        0
+abstention precision 100%
+
+a system that never refused would be wrong 20% of the time
+this one is wrong 0.0% of the time, on 70% of frames
 ```
 
-**Read that honestly: it is a smoke test, not a result.** The inputs are ten
-hand-written rows, so the abstention denominator is three and one row moves the
-figure by 33 points. The headline worth quoting today is the other one — **risk
-0% at 70% coverage**: over those frames it never gave a wrong readiness answer,
-and it was still willing to answer seven times in ten.
+**The harness refuses to call that a result, and so should you** — ten
+hand-written seed rows is a smoke test for the metric, not evidence about the
+system. `report()` prints `NOT A RESULT` under 100 frames on purpose.
 
-The metric also needs fixing, not just more rows. It currently decides whether
-an abstention was justified by asking what `doneness` would have said — the very
-number the system had just declared untrustworthy. The corpus needs an
-independent `label_doneness` before any of this counts as evidence. Calibrated
-abstention under degraded perception is an open problem with no consumer
-implementations, and that is the research-grade part.
+An abstention is judged against whether the **estimate was actually unreliable**
+(`|doneness − label_doneness| > 0.15`), not against whether it would have landed
+on the right side of the gate. That distinction is the whole metric. Steam
+crosses the lens, confidence collapses to 0.31, and the model still emits
+`doneness=0.88`; if that noise happens to be correct, side-of-gate scoring
+records the refusal as a mistake — **rewarding luck and penalising calibration**,
+on exactly the behaviour this project exists to demonstrate. Rows therefore carry
+a continuous `label_doneness`; rows with only the older `label_ready` bit still
+run and are reported as degraded.
+
+The eval also prints a risk-coverage sweep over the confidence floor, because
+"the threshold is too conservative" is a claim you can only check against a
+table:
+
+```
+  floor   coverage   risk   abstained  justified
+  0.30       80%   12.5%          2          2
+  0.35       70%    0.0%          3          3
+  0.60       70%    0.0%          3          3  <- current
+  0.90       50%    0.0%          5          3
+```
+
+On the seed corpus there is a **safe plateau from 0.35 to 0.85** where risk is
+0% and coverage is identical; below 0.35 risk jumps to 11–12%. So the current
+floor is not costing coverage, and the earlier read that it was "too
+conservative" was an artefact of the old scoring. Re-run this against real
+labelled frames before trusting any of it.
 
 ## The four policy rules
 
@@ -131,6 +153,7 @@ python3 tests/test_policy.py            # the four policy rules
 python3 tests/test_steering.py          # the tool-boundary gate
 python3 tests/test_scenarios.py         # all four verdicts are reachable
 python3 tests/test_refusal_contract.py  # a refusal is never spoken as a wait
+python3 tests/test_abstention.py        # the metric rewards calibration, not luck
 python3 evals/abstention.py             # abstention quality over labelled frames
 ```
 

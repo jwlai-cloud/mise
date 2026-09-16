@@ -1,0 +1,30 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "InvokeTheModelsTheAgentGraphUses",
+      "Effect": "Allow",
+      "Action": ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream",
+                 "bedrock:Converse", "bedrock:ConverseStream"],
+      "Resource": [
+        "arn:aws:bedrock:ap-southeast-2:*:inference-profile/au.*",
+        "arn:aws:bedrock:*::foundation-model/*"
+      ]
+    },
+    {
+      "Sid": "PerCookCalibration",
+      "Effect": "Allow",
+      "Action": ["bedrock-agentcore:CreateEvent", "bedrock-agentcore:ListEvents",
+                 "bedrock-agentcore:RetrieveMemoryRecords", "bedrock-agentcore:GetMemory",
+                 "bedrock-agentcore:IngestData"],
+      "Resource": "arn:aws:bedrock-agentcore:ap-southeast-2:*:memory/*"
+    },
+    {
+      "Sid": "Observability",
+      "Effect": "Allow",
+      "Action": ["logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogStreams",
+                 "xray:PutTraceSegments", "xray:PutTelemetryRecords"],
+      "Resource": "*"
+    }
+  ]
+}
