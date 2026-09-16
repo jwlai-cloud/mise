@@ -37,18 +37,26 @@ decline to judge at all when it can't see properly.
   `docs/ARCHITECTURE.md` (current state), `docs/adr/` (immutable decisions),
   `docs/PROGRESS.md` (every session), `docs/LEARNING.md`, `docs/FRICTION.md`.
 - `docs/FRICTION.md` is worth up to **10% of the judging score**. Add to it whenever
-  a platform wastes your time. Six entries are already banked.
+  a platform wastes your time. Nine entries are banked.
+- `docs/PRODUCT-FEEDBACK.md` is a **required** submission element and a different
+  artefact: five named questions per tool, API or SDK actually used. Keep it honest
+  about what was run versus only designed against — overstating depth is easier for
+  a judge to puncture than admitting a gap.
 
 ## Run and test
 
 ```bash
-pip install -e .
+pip install -e .          # mcp is capped <2 on purpose; 2.x removed FastMCP
 PYTHONPATH=src uvicorn mise.app:app --port 8000
-# MCP:   http://localhost:8000/mcp
-# panel: http://localhost:8000/dev/panel
-# start: curl "localhost:8000/dev/start?slug=soffritto&step=1"
+# MCP:     http://localhost:8000/mcp
+# panel:   http://localhost:8000/dev/panel
+# control: http://localhost:8000/dev/control   <- four buttons, one per verdict
+# camera:  http://localhost:8000/dev/camera    <- needs HTTPS; use a tunnel
+# arm:     curl "localhost:8000/dev/scenario?name=steam&at=40"
+# reset:   curl "localhost:8000/dev/reset"     <- clears learned calibration
 
 python3 tests/test_gate.py tests/test_policy.py tests/test_steering.py
+python3 tests/test_scenarios.py tests/test_refusal_contract.py tests/test_abstention.py
 python3 evals/abstention.py
 ```
 
@@ -61,9 +69,15 @@ python3 evals/abstention.py
   camera-facing developer API is the Object Detection Sensor API (person/pet/package/
   vehicle). Use your own camera.
 - AgentCore is GA in **ap-southeast-2** for Runtime, Memory, Gateway, Identity,
-  Policy, Evaluations, Observability. No `apac.` Anthropic profile — use **`au.`**
-  (residency, 4.5-gen) rather than `global.*` (frontier, no residency). Residency was
-  a deliberate choice and is part of the pitch.
+  Policy, Evaluations, Observability — but it is GA in the US regions too, so Sydney
+  was never distinguished by that. No `apac.` Anthropic profile: **`au.`** gives
+  residency on 4.5-gen models, `global.*`/`us.*` give frontier without it.
+  **Superseded by ADR-0004:** develop in the US, decide residency from the spike's
+  numbers. Region is `AWS_REGION`, not architecture.
+- **AWS is blocked on two things, neither of them code.** The Anthropic use-case form
+  is unsubmitted (surfaces as `ResourceNotFoundException`, not an auth error), and the
+  account has no `bedrock-agentcore:*` and no Sydney Bedrock permissions. Policies are
+  written and ready in `infra/`; attaching them needs an admin principal.
 - `mcp` 1.27 `FastMCP` API: `@mcp.tool(meta=...)`, `@mcp.resource(uri, mime_type=...)`,
   `mcp.streamable_http_app()`. `meta` populates `_meta`, which is how MCP Apps links
   a tool to its `ui://` panel.

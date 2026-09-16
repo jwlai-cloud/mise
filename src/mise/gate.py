@@ -24,15 +24,22 @@ class Decision:
     evidence: str = ""
 
     def spoken(self) -> str:
-        """What Alexa actually says. Short - the voice budget is 30 seconds."""
+        """What Alexa actually says. Short - the voice budget is 30 seconds.
+
+        This is a design surface, not a formatter: each verdict keeps its own
+        register, and a refusal must never be phrased like a wait.
+        """
+        r = self.reason.rstrip()
+        if r and r[-1] not in ".!?":      # evidence arrives as a fragment
+            r += "."
         if self.verdict == "abort":
-            return f"Take it off the heat. {self.reason}"
+            return f"Take it off the heat. {r}"
         if self.verdict == "refuse":
-            return f"I can't tell right now. {self.reason}"
+            return f"I can't tell right now. {r}"
         if self.verdict == "wait":
             t = f" About {self.seconds_remaining} seconds." if self.seconds_remaining else ""
-            return f"Not yet. {self.reason}{t}"
-        return f"Go ahead. {self.reason}"
+            return f"Not yet. {r}{t}"
+        return f"Go ahead. {r}"
 
 
 def decide(state: CookState, step: Step) -> Decision:

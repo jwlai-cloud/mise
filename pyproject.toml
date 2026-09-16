@@ -4,7 +4,19 @@ version = "0.1.0"
 description = "The cooking assistant that tells you to wait. An Alexa+ MCP server that watches the pan."
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
-dependencies = ["mcp>=1.27", "pydantic>=2", "uvicorn>=0.30", "starlette>=0.37"]
+# mcp is capped below 2.0 deliberately: mcp 2.x removed mcp.server.fastmcp
+# (FastMCP was renamed MCPServer), so an uncapped >=1.27 resolves to a release
+# that cannot import this server. AgentCore Runtime's own MCP guide is still on
+# the 1.x FastMCP API, so 1.x is also the deployment target.
+dependencies = ["mcp>=1.27,<2", "pydantic>=2", "uvicorn>=0.30", "starlette>=0.37"]
+
+[project.optional-dependencies]
+# The AgentCore layers degrade to local fallbacks when these are absent, which
+# is the supported path on a laptop with no credentials - but they must be
+# installable, or the three-layer contract is only ever one layer deep.
+# botocore>=1.43 is a hard floor, not a preference: 1.42.9 has no `outputConfig`
+# in its bedrock-runtime model, so structured output fails client-side.
+aws = ["strands-agents", "bedrock-agentcore", "boto3", "botocore>=1.43.0"]
 
 [build-system]
 requires = ["hatchling"]

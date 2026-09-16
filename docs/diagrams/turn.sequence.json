@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "\"Can I add the garlic yet?\"",
+    "subtitle": "One voice turn, the refusal path, and the panel that keeps going after the turn ends",
+    "viewBox": [
+      900,
+      960
+    ],
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "slow-plane",
+        "label": "Before anyone asks",
+        "focus": [
+          "graph",
+          "store"
+        ],
+        "note": "The agent graph is already running; the critic has dissented on a steamed frame."
+      },
+      {
+        "id": "the-turn",
+        "label": "The voice turn",
+        "focus": [
+          "cook",
+          "alexa",
+          "mcp",
+          "store",
+          "policy"
+        ],
+        "note": "Four hops, one dictionary read, no model call."
+      },
+      {
+        "id": "after-the-turn",
+        "label": "After the voice stops",
+        "focus": [
+          "panel",
+          "alexa",
+          "mcp"
+        ],
+        "note": "The panel keeps polling and keeps the detail the voice had to shorten."
+      }
+    ]
+  },
+  "participants": [
+    {
+      "id": "cook",
+      "type": "external",
+      "label": "Cook",
+      "sublabel": "at the hob"
+    },
+    {
+      "id": "alexa",
+      "type": "external",
+      "label": "Alexa+",
+      "sublabel": "MCP host"
+    },
+    {
+      "id": "mcp",
+      "type": "backend",
+      "label": "Mise MCP",
+      "sublabel": "stateless tool"
+    },
+    {
+      "id": "store",
+      "type": "database",
+      "label": "CookState",
+      "sublabel": "in-process cache"
+    },
+    {
+      "id": "policy",
+      "type": "security",
+      "label": "Dogwood",
+      "sublabel": "AgentCore Policy"
+    },
+    {
+      "id": "graph",
+      "type": "cloud",
+      "label": "Strands Graph",
+      "sublabel": "own clock"
+    },
+    {
+      "id": "panel",
+      "type": "frontend",
+      "label": "ui:// Panel",
+      "sublabel": "app-only tool"
+    }
+  ],
+  "segments": [
+    {
+      "from": 152,
+      "to": 290,
+      "label": "Slow plane, already running"
+    },
+    {
+      "from": 308,
+      "to": 640,
+      "label": "Voice turn \u2014 budget 500 ms"
+    },
+    {
+      "from": 658,
+      "to": 860,
+      "label": "After the turn ends"
+    }
+  ],
+  "messages": [
+    {
+      "from": "graph",
+      "to": "store",
+      "y": 180,
+      "label": "perception tick: doneness 0.88",
+      "variant": "emphasis"
+    },
+    {
+      "from": "graph",
+      "to": "store",
+      "y": 240,
+      "label": "critic dissents: confidence 0.20",
+      "variant": "dashed"
+    },
+    {
+      "from": "cook",
+      "to": "alexa",
+      "y": 340,
+      "label": "can I add the garlic yet?",
+      "variant": "emphasis"
+    },
+    {
+      "from": "alexa",
+      "to": "mcp",
+      "y": 394,
+      "label": "tools/call check_doneness",
+      "variant": "emphasis"
+    },
+    {
+      "from": "mcp",
+      "to": "store",
+      "y": 448,
+      "label": "read cache \u2014 no model call",
+      "variant": "default"
+    },
+    {
+      "from": "store",
+      "to": "mcp",
+      "y": 502,
+      "label": "0.88 but confidence 0.20",
+      "variant": "return"
+    },
+    {
+      "from": "mcp",
+      "to": "policy",
+      "y": 556,
+      "label": "may_speak_refusal?",
+      "variant": "security"
+    },
+    {
+      "from": "mcp",
+      "to": "alexa",
+      "y": 610,
+      "label": "verdict: refuse",
+      "variant": "return"
+    },
+    {
+      "from": "alexa",
+      "to": "cook",
+      "y": 686,
+      "label": "\"I can't tell right now.\"",
+      "variant": "emphasis"
+    },
+    {
+      "from": "panel",
+      "to": "alexa",
+      "y": 748,
+      "label": "poll every 2 s",
+      "variant": "dashed"
+    },
+    {
+      "from": "alexa",
+      "to": "mcp",
+      "y": 802,
+      "label": "tools/call panel_state",
+      "variant": "dashed"
+    },
+    {
+      "from": "mcp",
+      "to": "panel",
+      "y": 850,
+      "label": "CAN'T TELL + the evidence",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "graph",
+      "from": 168,
+      "to": 256,
+      "type": "cloud"
+    },
+    {
+      "participant": "store",
+      "from": 196,
+      "to": 516,
+      "type": "database"
+    },
+    {
+      "participant": "mcp",
+      "from": 384,
+      "to": 624,
+      "type": "backend"
+    },
+    {
+      "participant": "policy",
+      "from": 546,
+      "to": 572,
+      "type": "security"
+    },
+    {
+      "participant": "panel",
+      "from": 738,
+      "to": 862,
+      "type": "frontend"
+    },
+    {
+      "participant": "mcp",
+      "from": 792,
+      "to": 862,
+      "type": "backend"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Why This Fits 500 ms",
+      "items": [
+        "The tool reads a dictionary and applies a threshold",
+        "The vision model already ran, minutes of frames ago",
+        "Policy evaluation is a temporal lookup, not inference"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "The Refusal Is Earned",
+      "items": [
+        "Doneness 0.88 is past the 0.80 gate \u2014 it would have said GO",
+        "The critic's dissent dropped confidence below the step floor",
+        "So the verdict is refuse, not a confident wrong answer"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Voice Shortens, Screen Never Does",
+      "items": [
+        "Alexa+ is turn-based and cannot interrupt the cook",
+        "An app-only tool keeps the panel live after the turn",
+        "Rule 2 may shorten the voice; the panel always carries detail"
+      ]
+    }
+  ]
+}

@@ -56,11 +56,19 @@ class StateStore:
         with self._lock:
             return CookState(**{k: v for k, v in asdict(self._state).items()})
 
-    def write(self, **changes: Any) -> CookState:
+    def write(self, updated_at: float | None = None, **changes: Any) -> CookState:
+        """Record what the camera believes.
+
+        `updated_at` is when the FRAME WAS TAKEN, not when we got round to
+        storing it. Defaulting it to now is only correct for a source with no
+        latency. A vision call takes two or three seconds, so stamping the
+        write would make is_stale measure our own latency instead of the age of
+        the view - a ~20% error on the input to the refusal path.
+        """
         with self._lock:
             cur = asdict(self._state)
             cur.update(changes)
-            cur["updated_at"] = time.time()
+            cur["updated_at"] = time.time() if updated_at is None else updated_at
             cur["frame_seq"] = self._state.frame_seq + 1
             self._state = CookState(**cur)
             return self._state

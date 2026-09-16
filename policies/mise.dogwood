@@ -22,13 +22,18 @@ when {
 // 2. Alarm fatigue. Do not repeat the same refusal inside two minutes.
 //    Every incumbent nags; a coach that repeats itself gets muted, and a muted
 //    coach cannot warn you when it matters.
+//
+//    Scoped by VERDICT as well as by step. A repeated "not yet" must not spend
+//    the budget a genuine "I can't tell" needs: suppressing a refusal down to a
+//    wait would speak a readiness claim about a frame we declined to read.
+//    Both stay visible on the panel either way - invariant 4.
 forbid (
   principal,
   action == Action::"speak_refusal",
   resource
 )
 when {
-  count(context.refusals_for_step) >= 1 since within 120 seconds
+  count(context.refusals_for_step_and_kind) >= 1 since within 120 seconds
 };
 
 // 3. Danger is never rate-limited and never gated on confidence.
@@ -41,6 +46,14 @@ permit (
 
 // 4. Three corrections on the same step in one session means the threshold is
 //    wrong, not the cook. Stop gating that step and hand control back.
+//
+//    The risk carve-out is load-bearing, not defensive. `forbid` beats `permit`
+//    in Cedar and Dogwood, so without it this rule would forbid blocking an
+//    advance over a burning pan - rule 3 permits `speak_abort`, a different
+//    action, and would not save it. Invariant 3 outranks this rule.
+//
+//    Handing control back stops BLOCKING; it never claims readiness. The voice
+//    still says "not yet" or "I can't tell", with "but it's your call" added.
 forbid (
   principal,
   action == Action::"block_advance",
@@ -48,4 +61,5 @@ forbid (
 )
 when {
   count(context.corrections_for_step) >= 3 since within 3600 seconds
+  && context.risk != "urgent"
 };

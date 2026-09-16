@@ -1,0 +1,339 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Mise \u2014 Two Planes Joined by One Cache",
+    "subtitle": "Agentic perception runs on its own clock; the Alexa+ voice path only ever reads",
+    "visual_preset": "blueprint",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "voice-turn",
+        "label": "The voice turn",
+        "focus": [
+          "cook",
+          "alexa",
+          "mcpserver",
+          "gate",
+          "store"
+        ],
+        "note": "Under 500 ms, because nothing on this path calls a model."
+      },
+      {
+        "id": "agent-plane",
+        "label": "The agentic plane",
+        "focus": [
+          "camera",
+          "graph",
+          "bedrock",
+          "store"
+        ],
+        "note": "The Strands graph reasons continuously and writes last-known-good state."
+      },
+      {
+        "id": "contract",
+        "label": "Where refusal is enforced",
+        "focus": [
+          "gate",
+          "policy",
+          "memory",
+          "panel"
+        ],
+        "note": "Deterministic gate, temporal policy, and a panel that is never suppressed."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "camera",
+      "type": "frontend",
+      "label": "Phone Camera",
+      "sublabel": "cook's own device",
+      "pos": [
+        40,
+        120
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "tag": "not Echo Show"
+    },
+    {
+      "id": "graph",
+      "type": "cloud",
+      "label": "Strands Graph",
+      "sublabel": "5 agents, own clock",
+      "pos": [
+        280,
+        120
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "tag": "AgentCore Runtime"
+    },
+    {
+      "id": "bedrock",
+      "type": "cloud",
+      "label": "Bedrock",
+      "sublabel": "au.* profiles",
+      "pos": [
+        520,
+        120
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "tag": "data residency"
+    },
+    {
+      "id": "store",
+      "type": "database",
+      "label": "CookState Cache",
+      "sublabel": "last known good",
+      "pos": [
+        280,
+        330
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "tag": "the seam"
+    },
+    {
+      "id": "memory",
+      "type": "cloud",
+      "label": "AgentCore Memory",
+      "sublabel": "cook/{actor}/hob/",
+      "pos": [
+        520,
+        330
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "tag": "calibration"
+    },
+    {
+      "id": "policy",
+      "type": "security",
+      "label": "AgentCore Policy",
+      "sublabel": "Dogwood temporal",
+      "pos": [
+        760,
+        330
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "tag": "4 rules"
+    },
+    {
+      "id": "gate",
+      "type": "backend",
+      "label": "Deterministic Gate",
+      "sublabel": "proceed / wait / refuse / abort",
+      "pos": [
+        280,
+        540
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "tag": "no model"
+    },
+    {
+      "id": "mcpserver",
+      "type": "backend",
+      "label": "Mise MCP Server",
+      "sublabel": "FastMCP :8000/mcp",
+      "pos": [
+        520,
+        540
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "tag": "stateless HTTP"
+    },
+    {
+      "id": "alexa",
+      "type": "external",
+      "label": "Alexa+",
+      "sublabel": "MCP host",
+      "pos": [
+        760,
+        540
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "tag": "turn-based"
+    },
+    {
+      "id": "cook",
+      "type": "external",
+      "label": "Cook",
+      "sublabel": "hands covered in flour",
+      "pos": [
+        1000,
+        540
+      ],
+      "size": [
+        150,
+        62
+      ]
+    },
+    {
+      "id": "panel",
+      "type": "frontend",
+      "label": "ui:// Panel",
+      "sublabel": "visibility: [app]",
+      "pos": [
+        1000,
+        330
+      ],
+      "size": [
+        150,
+        62
+      ],
+      "tag": "2 s poll"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "AWS ap-southeast-2 \u00b7 AgentCore Runtime",
+      "wraps": [
+        "graph",
+        "bedrock",
+        "store",
+        "memory",
+        "policy",
+        "gate",
+        "mcpserver"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "slow plane \u00b7 agentic, own clock",
+      "wraps": [
+        "graph",
+        "bedrock"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "fast plane \u00b7 < 500 ms, no model call",
+      "wraps": [
+        "gate",
+        "mcpserver"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "camera",
+      "to": "graph",
+      "label": "frames ~0.3 Hz"
+    },
+    {
+      "from": "graph",
+      "to": "bedrock",
+      "label": "vision + critic"
+    },
+    {
+      "from": "graph",
+      "to": "store",
+      "label": "write CookState",
+      "variant": "emphasis",
+      "labelDy": 24
+    },
+    {
+      "from": "gate",
+      "to": "store",
+      "label": "read, never write",
+      "variant": "emphasis"
+    },
+    {
+      "from": "mcpserver",
+      "to": "gate",
+      "label": "decide()"
+    },
+    {
+      "from": "alexa",
+      "to": "mcpserver",
+      "label": "MCP streamable HTTP",
+      "variant": "emphasis",
+      "labelDy": 43
+    },
+    {
+      "from": "cook",
+      "to": "alexa",
+      "label": "voice turn",
+      "labelDy": 43
+    },
+    {
+      "from": "mcpserver",
+      "to": "memory",
+      "label": "gate_for(cook)"
+    },
+    {
+      "from": "mcpserver",
+      "to": "policy",
+      "label": "may_advance",
+      "variant": "security"
+    },
+    {
+      "from": "panel",
+      "to": "alexa",
+      "label": "panel_state poll",
+      "variant": "dashed"
+    },
+    {
+      "from": "panel",
+      "to": "cook",
+      "label": "never suppressed",
+      "variant": "emphasis",
+      "labelDy": 24
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "The Load-Bearing Split",
+      "items": [
+        "Alexa+ budgets ~500 ms per tool round-trip",
+        "A vision model never fits in that budget",
+        "So the agent writes a cache and tools only read it"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Refusal Is Enforced, Not Prompted",
+      "items": [
+        "gate.py returns refuse on stale frames or low confidence",
+        "Dogwood conditions on the agent's own action history",
+        "Strands steering cancels advance_step at the tool boundary"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Documented AWS Integrations",
+      "items": [
+        "Runtime hosts both the MCP server and the agent graph",
+        "Memory calibrates per cook and per hob",
+        "Observability traces every graph node; Evaluations scores abstention"
+      ]
+    }
+  ]
+}

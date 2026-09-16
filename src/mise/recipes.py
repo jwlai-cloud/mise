@@ -40,4 +40,20 @@ SOFFRITTO = Recipe(
     ],
 )
 
-REGISTRY = {r.slug: r for r in (SOFFRITTO,)}
+# The same gates on a compressed clock, so the spoken estimate matches what the
+# demo scenarios actually do. Without this the panel fills in ninety seconds
+# while the voice says "about 168 seconds" - true of a real soffritto, visibly
+# wrong on camera.
+# ponytail: a scale factor, not a second recipe format. If a third timeline is
+# ever needed, make typical_seconds a property of the run rather than the step.
+SOFFRITTO_DEMO = Recipe(
+    slug="soffritto-demo",
+    title="Soffritto base",
+    steps=[
+        Step(s.index, s.instruction, s.goal, s.gate_doneness, s.min_confidence,
+             typical_seconds=max(10, round(s.typical_seconds * 90 / 420)))
+        for s in SOFFRITTO.steps
+    ],
+)
+
+REGISTRY = {r.slug: r for r in (SOFFRITTO, SOFFRITTO_DEMO)}

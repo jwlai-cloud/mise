@@ -1,0 +1,306 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Agent Topology \u2014 Two Strands Graphs",
+    "subtitle": "A hot graph per frame with a conditional critic; a cold graph triggered by the cook",
+    "visual_preset": "blueprint",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "hot",
+        "label": "Hot graph \u2014 per frame",
+        "focus": [
+          "frames",
+          "perception",
+          "critic",
+          "risk",
+          "arbiter"
+        ],
+        "note": "Runs about every three seconds and ends in one deterministic write."
+      },
+      {
+        "id": "abstain",
+        "label": "Where abstention is decided",
+        "focus": [
+          "perception",
+          "critic",
+          "arbiter",
+          "store"
+        ],
+        "note": "The critic is only traversed near the gate or under low confidence."
+      },
+      {
+        "id": "cold",
+        "label": "Cold graph \u2014 event driven",
+        "focus": [
+          "store",
+          "calib",
+          "memory",
+          "choreo",
+          "plan"
+        ],
+        "note": "Planning and calibration never run on the frame clock."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "frames",
+      "type": "external",
+      "label": "Frame Tick",
+      "sublabel": "~0.3 Hz, dropped not queued",
+      "pos": [
+        40,
+        180
+      ],
+      "size": [
+        156,
+        62
+      ]
+    },
+    {
+      "id": "perception",
+      "type": "cloud",
+      "label": "PerceptionAgent",
+      "sublabel": "frame \u2192 CookState",
+      "pos": [
+        286,
+        180
+      ],
+      "size": [
+        156,
+        62
+      ],
+      "tag": "au. Haiku 4.5"
+    },
+    {
+      "id": "critic",
+      "type": "cloud",
+      "label": "CriticAgent",
+      "sublabel": "\"what would make this wrong?\"",
+      "pos": [
+        540,
+        60
+      ],
+      "size": [
+        176,
+        62
+      ],
+      "tag": "conditional edge"
+    },
+    {
+      "id": "risk",
+      "type": "cloud",
+      "label": "RiskAgent",
+      "sublabel": "smoke, scorch, boil-over",
+      "pos": [
+        540,
+        300
+      ],
+      "size": [
+        176,
+        62
+      ],
+      "tag": "every tick"
+    },
+    {
+      "id": "arbiter",
+      "type": "backend",
+      "label": "Arbiter",
+      "sublabel": "merge \u2192 one write",
+      "pos": [
+        810,
+        180
+      ],
+      "size": [
+        156,
+        62
+      ],
+      "tag": "deterministic"
+    },
+    {
+      "id": "store",
+      "type": "database",
+      "label": "CookState Cache",
+      "sublabel": "read by every MCP tool",
+      "pos": [
+        1060,
+        180
+      ],
+      "size": [
+        156,
+        62
+      ]
+    },
+    {
+      "id": "calib",
+      "type": "cloud",
+      "label": "CalibrationAgent",
+      "sublabel": "on record_correction",
+      "pos": [
+        810,
+        470
+      ],
+      "size": [
+        156,
+        62
+      ],
+      "tag": "cold"
+    },
+    {
+      "id": "memory",
+      "type": "cloud",
+      "label": "AgentCore Memory",
+      "sublabel": "this cook, this hob",
+      "pos": [
+        1060,
+        470
+      ],
+      "size": [
+        156,
+        62
+      ]
+    },
+    {
+      "id": "choreo",
+      "type": "cloud",
+      "label": "ChoreographyAgent",
+      "sublabel": "on start_service",
+      "pos": [
+        810,
+        650
+      ],
+      "size": [
+        156,
+        62
+      ],
+      "tag": "cold"
+    },
+    {
+      "id": "plan",
+      "type": "database",
+      "label": "Service Plan",
+      "sublabel": "backward-scheduled",
+      "pos": [
+        1060,
+        650
+      ],
+      "size": [
+        156,
+        62
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "hot graph \u00b7 strands.multiagent.GraphBuilder",
+      "wraps": [
+        "perception",
+        "critic",
+        "risk",
+        "arbiter"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "cold graph \u00b7 event triggered",
+      "wraps": [
+        "calib",
+        "memory",
+        "choreo",
+        "plan"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "frames",
+      "to": "perception",
+      "label": "jpeg"
+    },
+    {
+      "from": "perception",
+      "to": "critic",
+      "label": "only near the gate",
+      "variant": "dashed"
+    },
+    {
+      "from": "perception",
+      "to": "risk",
+      "label": "always"
+    },
+    {
+      "from": "perception",
+      "to": "arbiter",
+      "label": "estimate"
+    },
+    {
+      "from": "critic",
+      "to": "arbiter",
+      "label": "dissent forces refuse",
+      "variant": "emphasis"
+    },
+    {
+      "from": "risk",
+      "to": "arbiter",
+      "label": "urgent forces abort",
+      "variant": "emphasis"
+    },
+    {
+      "from": "arbiter",
+      "to": "store",
+      "label": "STORE.write()",
+      "variant": "emphasis",
+      "labelDy": -33
+    },
+    {
+      "from": "store",
+      "to": "calib",
+      "label": "frames + corrections"
+    },
+    {
+      "from": "calib",
+      "to": "memory",
+      "label": "bounded threshold move",
+      "variant": "security",
+      "labelDy": 40
+    },
+    {
+      "from": "choreo",
+      "to": "plan",
+      "label": "land the pans together",
+      "labelDy": 55
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Why These Are Separate Agents",
+      "items": [
+        "Risk must never be gated on the perception agent's confidence",
+        "The critic runs only where a mistake is expensive, so cost stays flat",
+        "Calibration and choreography plan; they must not run at frame rate"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "The Arbiter Is Deliberately Dumb",
+      "items": [
+        "Three agent opinions converge on one deterministic merge",
+        "Only the arbiter writes, so the cache has a single author",
+        "The merge is unit-testable with no model in the loop"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Honest Accounting",
+      "items": [
+        "The critic is the node that earns the multi-agent claim",
+        "Calibration could be a function today \u2014 it becomes an agent when it reasons over history",
+        "Choreography is the only node that genuinely plans"
+      ]
+    }
+  ]
+}

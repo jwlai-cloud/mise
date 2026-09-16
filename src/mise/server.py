@@ -9,6 +9,7 @@ and lands in state.STORE.
 """
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -39,6 +40,10 @@ mcp = FastMCP(
 # Session state. One cook at a time; a real deployment keys this per user.
 _session: dict[str, Any] = {"recipe": None, "step_index": 0}
 
+# What the voice says when rule 2 has already spoken this verdict recently.
+# Each verdict keeps its own register: a shortened refusal is still a refusal.
+SHORT_FORM = {"wait": "Still not yet.", "refuse": "I still can't tell."}
+
 
 class DecisionOut(BaseModel):
     verdict: str = Field(description="proceed | wait | refuse | abort")
@@ -49,6 +54,22 @@ class DecisionOut(BaseModel):
     instruction: str
     doneness: float
     confidence: float
+
+
+def _live_step(recipe, index: int):
+    """The step with this cook's calibrated gate applied.
+
+    Every reader goes through here - check_doneness, advance_step AND
+    panel_state - so the screen can never show a different gate from the one
+    the voice just judged against. Returns a copy: mutating the shared Step in
+    REGISTRY made correctness depend on which tool happened to run first.
+    """
+    step = recipe.step(index)
+    LEDGER.step = step.index
+    return replace(
+        step,
+        gate_doneness=CALIBRATION.gate_for(recipe.slug, step.index, step.gate_doneness),
+    )
 
 
 def _panel_meta(visibility: list[str] | None = None) -> dict[str, Any]:
@@ -94,24 +115,33 @@ def check_doneness() -> DecisionOut:
             verdict="refuse", say="Which recipe are we cooking?",
             reason="no recipe started", step=0, instruction="", doneness=0.0, confidence=0.0,
         )
-    step = recipe.step(_session["step_index"])
-    # The cook's own threshold for this step, learned from their corrections.
-    step.gate_doneness = CALIBRATION.gate_for(recipe.slug, step.index, step.gate_doneness)
+    step = _live_step(recipe, _session["step_index"])
     state = STORE.read()
     d = decide(state, step)
+    handed_back = LEDGER.should_stop_gating(step.index).allowed and d.verdict != "abort"
 
     # Feed the policy ledger: what the agent has observed and said this session.
     suppressed = False
     if d.verdict == "proceed":
         LEDGER.note_gate_passed()
     elif d.verdict in ("wait", "refuse"):
-        if LEDGER.may_speak_refusal(step.index).allowed:
-            LEDGER.note_refusal(step.index)
+        # Cooldowns are per verdict, not per step. Shortening a repeated "not
+        # yet" is alarm-fatigue hygiene; shortening a refusal INTO a "not yet"
+        # would speak a readiness claim about a frame we just declined to read.
+        # `abort` never reaches this branch at all - invariant 3.
+        if LEDGER.may_speak_refusal(step.index, d.verdict).allowed:
+            LEDGER.note_refusal(step.index, d.verdict)
         else:
             # Rule 2: already said this within two minutes. The panel keeps
             # showing the detail; the voice shortens rather than nagging.
             suppressed = True
-    say = "Still not yet." if suppressed else d.spoken()
+    say = SHORT_FORM[d.verdict] if suppressed else d.spoken()
+    # Rule 4: after three corrections we stop BLOCKING, but we never start
+    # claiming. Flipping the verdict to 'proceed' here would say "go ahead"
+    # about a pan we just said we could not read - invariant 2, resolved by a
+    # guess. The verdict stands; only the blocking stops.
+    if handed_back and d.verdict in ("wait", "refuse"):
+        say += " But it's your call on this step."
     return DecisionOut(
         verdict=d.verdict, say=say, reason=d.reason,
         seconds_remaining=d.seconds_remaining, step=step.index,
@@ -130,9 +160,13 @@ def advance_step() -> dict[str, Any]:
         return {"advanced": False, "reason": "No recipe started."}
     # Enforced in three places, deliberately: here, in AgentCore Policy
     # (policies/mise.dogwood), and at the tool boundary by Strands steering.
+    step = _live_step(recipe, _session["step_index"])
     allowed = guarded_advance()
-    d = decide(STORE.read(), recipe.step(_session["step_index"]))
-    if not allowed.allowed or d.verdict != "proceed":
+    d = decide(STORE.read(), step)
+    # Rule 4 hands control back after three corrections - but never over a
+    # burning pan. abort blocks regardless of every other rule. Invariant 3.
+    hand_back = allowed.allowed and allowed.rule == "give_up_gracefully"
+    if d.verdict == "abort" or (not hand_back and (not allowed.allowed or d.verdict != "proceed")):
         return {
             "advanced": False,
             "verdict": d.verdict,
@@ -156,12 +190,13 @@ def panel_state() -> dict[str, Any]:
     state = STORE.read()
     out = state.to_dict()
     if recipe is not None:
-        step = recipe.step(_session["step_index"])
+        step = _live_step(recipe, _session["step_index"])
         d = decide(state, step)
         out |= {
             "title": recipe.title, "step": step.index, "steps_total": len(recipe.steps),
             "instruction": step.instruction, "goal": step.goal,
-            "gate": step.gate_doneness, "verdict": d.verdict,
+            "gate": step.gate_doneness, "min_confidence": step.min_confidence,
+            "verdict": d.verdict,
             "reason": d.reason, "seconds_remaining": d.seconds_remaining,
         }
     return out
@@ -179,8 +214,8 @@ def record_correction(direction: str, note: str = "") -> dict[str, Any]:
     recipe = REGISTRY.get(_session["recipe"] or "")
     if recipe is None or direction not in ("too_early", "too_late"):
         return {"recorded": False, "reason": "Need a running recipe and 'too_early' or 'too_late'."}
-    step = recipe.step(_session["step_index"])
-    old = CALIBRATION.gate_for(recipe.slug, step.index, step.gate_doneness)
+    step = _live_step(recipe, _session["step_index"])
+    old = step.gate_doneness
     new = CALIBRATION.record_correction(recipe.slug, step.index, old, direction, note)
     LEDGER.note_correction(step.index)
     give_up = LEDGER.should_stop_gating(step.index)

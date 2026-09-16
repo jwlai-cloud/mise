@@ -1,0 +1,127 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mise — camera</title>
+<style>
+  :root{--bg:#14181E;--fg:#fff;--dim:#93a1b5;--go:#38B87C;--stop:#E5484D;--wait:#E8B23A;--line:#2B3542}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);min-height:100dvh;
+       padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));
+       display:flex;flex-direction:column;gap:14px;
+       font:16px/1.4 "Amazon Ember",system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  h1{font-size:17px;margin:0;letter-spacing:-.01em}
+  video{width:100%;border-radius:4px;background:#000;aspect-ratio:4/3;object-fit:cover;display:block}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  button{appearance:none;font:inherit;font-weight:600;cursor:pointer;color:#14181E;
+         background:var(--go);border:0;padding:14px 22px;border-radius:4px;flex:1;min-width:140px}
+  button.off{background:var(--stop);color:#fff}
+  button:focus-visible{outline:2px solid var(--wait);outline-offset:2px}
+  .stat{font-size:13px;color:var(--dim);border-top:1px solid var(--line);padding-top:12px;
+        display:flex;flex-direction:column;gap:4px}
+  .stat b{color:var(--fg);font-weight:600}
+  .err{color:var(--stop);font-size:14px;line-height:1.45}
+  .err code{background:#242B35;padding:1px 5px;border-radius:3px;word-break:break-all}
+</style>
+
+<h1>Mise — pan camera</h1>
+<video id="v" playsinline muted autoplay></video>
+
+<div class="row">
+  <button id="go">Start sending</button>
+</div>
+
+<div class="stat">
+  <span>state <b id="st">idle</b></span>
+  <span>frames sent <b id="n">0</b> · dropped <b id="dr">0</b></span>
+  <span>last frame <b id="kb">—</b></span>
+</div>
+
+<p class="err" id="err" hidden></p>
+
+<canvas id="c" width="640" height="480" hidden></canvas>
+
+<script>
+// The phone is deliberately dumb: grab a frame, POST the JPEG, forget it.
+// No inference here - the model runs server-side on its own clock.
+const EVERY_MS = 3000, W = 640, H = 480, QUALITY = 0.6;
+
+const v = document.getElementById("v"), c = document.getElementById("c");
+const st = document.getElementById("st"), errEl = document.getElementById("err");
+const go = document.getElementById("go");
+let timer = null, wake = null, sent = 0, dropped = 0;
+
+function fail(html) { errEl.hidden = false; errEl.innerHTML = html; st.textContent = "error"; }
+
+if (!window.isSecureContext) {
+  fail(`<b>Blocked: not a secure context.</b><br>` +
+       `Cameras need HTTPS. A LAN address like <code>http://192.168.x.x:8000</code> will never ` +
+       `prompt for permission — it refuses outright. Run ` +
+       `<code>cloudflared tunnel --url http://localhost:8000</code> and open the https URL it prints.`);
+  go.disabled = true;
+}
+
+async function startCamera() {
+  try {
+    v.srcObject = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" }, width: W, height: H },
+      audio: false,
+    });
+    return true;
+  } catch (e) {
+    fail(`<b>Camera refused:</b> ${e.name}. ` +
+         (e.name === "NotAllowedError" ? "Grant camera permission and reload." : ""));
+    return false;
+  }
+}
+
+async function tick() {
+  if (v.readyState < 2) return;
+  c.getContext("2d").drawImage(v, 0, 0, W, H);
+  const blob = await new Promise(r => c.toBlob(r, "image/jpeg", QUALITY));
+  if (!blob) return;
+  document.getElementById("kb").textContent = Math.round(blob.size / 1024) + " KB";
+  try {
+    const res = await fetch("/ingest", { method: "POST", body: blob,
+                                         headers: { "Content-Type": "image/jpeg" } });
+    const j = await res.json().catch(() => ({}));
+    if (j.dropped) { dropped++; }
+    else if (res.ok) { sent++; }
+    else {
+      // 501 until the vision model is wired. Say so; don't look broken.
+      st.textContent = j.reason || ("HTTP " + res.status);
+    }
+  } catch { dropped++; }
+  document.getElementById("n").textContent = sent;
+  document.getElementById("dr").textContent = dropped;
+}
+
+async function start() {
+  if (!await startCamera()) return;
+  // Without this the screen sleeps mid-cook and the frames simply stop.
+  try { wake = await navigator.wakeLock.request("screen"); } catch { /* unsupported is fine */ }
+  timer = setInterval(tick, EVERY_MS);
+  tick();
+  st.textContent = "sending every " + (EVERY_MS / 1000) + "s";
+  go.textContent = "Stop";
+  go.classList.add("off");
+}
+
+function stop() {
+  clearInterval(timer); timer = null;
+  wake?.release?.().catch(() => {}); wake = null;
+  v.srcObject?.getTracks().forEach(t => t.stop());
+  v.srcObject = null;
+  st.textContent = "stopped";
+  go.textContent = "Start sending";
+  go.classList.remove("off");
+}
+
+go.onclick = () => (timer ? stop() : start());
+
+// A screen that slept and came back has a dead wake lock; take a new one.
+document.addEventListener("visibilitychange", async () => {
+  if (document.visibilityState === "visible" && timer && !wake) {
+    try { wake = await navigator.wakeLock.request("screen"); } catch { /* fine */ }
+  }
+});
+</script>

@@ -1,0 +1,109 @@
+<!doctype html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mise — demo control</title>
+<style>
+  :root{--bg:#14181E;--fg:#fff;--dim:#93a1b5;--wait:#E8B23A;--go:#38B87C;--stop:#E5484D;
+        --cool:#5B9BD9;--card:#1D242E;--line:#2B3542}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);padding:24px;min-height:100vh;
+       font:16px/1.4 "Amazon Ember",system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  h1{font-size:19px;margin:0 0 4px;letter-spacing:-.01em}
+  .sub{color:var(--dim);font-size:14px;margin:0 0 22px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;max-width:900px}
+  button{appearance:none;cursor:pointer;text-align:left;font:inherit;color:var(--fg);
+         background:var(--card);border:1px solid var(--line);border-left-width:4px;
+         padding:16px 18px;display:flex;flex-direction:column;gap:5px;transition:background .15s}
+  button:hover{background:#242C38}
+  button:focus-visible{outline:2px solid var(--cool);outline-offset:2px}
+  button[aria-pressed="true"]{background:#2A3441}
+  .k{font-size:17px;font-weight:700;letter-spacing:-.01em}
+  .v{font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+  .d{font-size:13px;color:var(--dim);line-height:1.35}
+  .b-clean{border-left-color:var(--go)}    .b-clean .v{color:var(--go)}
+  .b-steam{border-left-color:var(--cool)}  .b-steam .v{color:var(--cool)}
+  .b-blocked{border-left-color:var(--cool)}.b-blocked .v{color:var(--cool)}
+  .b-catches{border-left-color:var(--stop)}.b-catches .v{color:var(--stop)}
+  .bar{margin-top:24px;max-width:900px;border-top:1px solid var(--line);padding-top:14px;
+       display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline;font-size:13px;color:var(--dim)}
+  .bar b{color:var(--fg);font-weight:600}
+  a{color:var(--cool)}
+  code{background:#242B35;padding:1px 5px;border-radius:3px;font-size:12px}
+  .lnk{all:unset;cursor:pointer;color:var(--cool);text-decoration:underline;font-size:13px}
+  .lnk:focus-visible{outline:2px solid var(--cool);outline-offset:2px}
+</style>
+
+<h1>Demo control</h1>
+<p class="sub">One click arms the rig: scenario restarts at t=0, recipe jumps to the onions step.
+   Keep this on a second screen — it never appears in the shot.</p>
+
+<div class="grid" id="grid"></div>
+
+<div class="bar">
+  <span>running <b id="now">…</b></span>
+  <span>elapsed <b id="el">—</b></span>
+  <span>verdict <b id="vd">—</b></span>
+  <span><a href="/dev/panel" target="_blank" rel="noopener">panel ↗</a></span>
+  <span><a href="/dev/camera" target="_blank" rel="noopener">camera ↗</a></span>
+  <span>keys <code>1</code>–<code>4</code></span>
+  <span>calibration <b id="cal">—</b> <button id="rst" class="lnk">reset</button></span>
+</div>
+
+<script>
+const BUTTONS = [
+  {k:"clean_run", v:"GO",          t:"Clean run",      d:"Pan behaves. NOT YET climbing to GO at ~70s."},
+  {k:"steam",     v:"CAN'T TELL",  t:"Steam on lens",  d:"Reads 0.88 — past the gate — but confidence collapses to 0.22. A guessing system says GO here."},
+  {k:"blocked",   v:"CAN'T TELL",  t:"Camera blocked", d:"Frames stop at 35s. Staleness fires 15s later and the panel dims."},
+  {k:"catches",   v:"OFF THE HEAT",t:"Pan catches",    d:"Danger at 42s. Overrides the cooldown and a confidence too low to judge on."},
+];
+
+const grid = document.getElementById("grid");
+for (const b of BUTTONS) {
+  const el = document.createElement("button");
+  el.className = "b-" + b.k.split("_")[0];
+  el.dataset.k = b.k;
+  el.setAttribute("aria-pressed", "false");
+  el.innerHTML = `<span class="v"></span><span class="k"></span><span class="d"></span>`;
+  el.querySelector(".v").textContent = b.v;
+  el.querySelector(".k").textContent = b.t;
+  el.querySelector(".d").textContent = b.d;
+  el.onclick = () => run(b.k);
+  grid.appendChild(el);
+}
+
+async function run(name) {
+  await fetch("/dev/scenario?name=" + encodeURIComponent(name)).catch(() => {});
+  poll();
+}
+
+async function poll() {
+  const s = await fetch("/dev/scenarios").then(r => r.json()).catch(() => null);
+  if (s) {
+    document.getElementById("now").textContent = s.running;
+    document.getElementById("el").textContent = s.elapsed + "s";
+    for (const el of grid.children)
+      el.setAttribute("aria-pressed", String(el.dataset.k === s.running));
+  }
+  const p = await fetch("/dev/state").then(r => r.json()).catch(() => null);
+  if (p) {
+    document.getElementById("vd").textContent =
+      (p.verdict || "—") + (p.is_stale ? " (stale)" : "");
+    // A moved gate is the commonest reason a take goes wrong for no visible
+    // reason: the pan reads 0.91 against a learned 0.95 and just says NOT YET.
+    document.getElementById("cal").textContent =
+      p.gate != null ? "gate " + p.gate.toFixed(2) : "—";
+  }
+}
+
+document.getElementById("rst").onclick = async () => {
+  await fetch("/dev/reset").catch(() => {});
+  poll();
+};
+
+addEventListener("keydown", e => {
+  const i = "1234".indexOf(e.key);
+  if (i >= 0) run(BUTTONS[i].k);
+});
+
+poll();
+setInterval(poll, 1000);
+</script>

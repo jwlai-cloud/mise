@@ -2,13 +2,83 @@
 
 Newest first. **Read this first in any new session.**
 
+## 2026-09-16 — session 2 (Claude Code)
+
+### Done this session
+- **Grilled the project against the real rubric** (fetched from Devpost, not assumed). Four
+  equally-weighted criteria; friction log is a 10% bonus; **Product Feedback is mandatory and
+  separate from it, and does not exist yet**. Alexa+ simulated-experience path confirmed permitted
+  verbatim. Open Source mini challenge confirmed to need an artefact *alongside* the main repo —
+  but "or contribute to an existing public repository" makes one small upstream PR enough.
+- **Verified the server for real.** Boots, negotiates protocol **2025-11-25**, 5 tools +
+  `ui://mise/panel`, driven end to end by a real MCP client over streamable HTTP.
+- **Fixed: `pip install -e .` was broken.** `mcp>=1.27` resolved to mcp 2.2.0, which removed
+  `mcp.server.fastmcp`. Pinned `<2`; added a `[aws]` extra so the Strands and AgentCore layers are
+  actually installable.
+- **Fixed the bug that defeated the thesis.** Rule 2's cooldown was keyed on step, not verdict, and
+  the suppressed string was "Still not yet." — so a plain `wait` silenced a genuine `refuse` and the
+  voice spoke a readiness claim about a frame it had just declined to read. Cooldowns are now per
+  verdict. `tests/test_refusal_contract.py` locks it.
+- **Fixed rule 4: it was spoken but never wired.** `should_stop_gating` only ever fed a string —
+  the assistant promised to hand control back and then kept blocking. Now enforced in the ledger, so
+  all three layers inherit it, with abort excluded at both ends and a `risk != "urgent"` carve-out
+  added to the Dogwood rule (`forbid` beats `permit`, so without it rule 4 would have forbidden
+  blocking an advance over a burning pan).
+- **Fixed calibration drift between voice and screen.** One `_live_step()` resolver now serves
+  `check_doneness`, `advance_step` and `panel_state`, and returns a copy — mutating the shared
+  `Step` in `REGISTRY` had made correctness depend on which tool ran first.
+- **Fixed a real staleness bug.** `STORE.write()` stamped `time.time()`, so once `ingest_frame`
+  lands a 2-3s vision call would make `is_stale` measure our latency instead of the age of the view.
+  It now takes the frame's own timestamp.
+- **Built the demo rig.** `ScenarioSource` replaces `SimulatedSource`: four scripted scenarios, seek
+  (`&at=`), reset, and an operator remote at `/dev/control`. **All four verdicts are now reachable
+  with no model, no camera and no AWS** — previously `refuse` and `abort` were unreachable on the
+  only running code path, and the pan pinned at doneness 1.0 forty-five seconds after boot.
+- **Built the camera path.** `POST /ingest` (drops frames rather than queueing) and `/dev/camera`,
+  a phone page that posts JPEGs at ~0.3 Hz. `ingest_frame` still raises `NotImplementedError`; the
+  route returns 501 and says so rather than looking broken.
+- **Captured the MVP verification video** (`docs/demo/mvp-verification.mp4`, 47s) plus five panel
+  screenshots including the two that never existed: `panel-refuse.png` and `panel-abort.png`.
+- Architecture, sequence and agent-topology diagrams in `docs/diagrams/`; design brief in
+  `docs/design-brief.html`.
+
+### In progress (not done)
+- Nothing half-built. `ingest_frame` remains the one deliberate stub.
+
+### Next (priority order)
+1. **Push the repo public.** There is still no git remote. Rules requirement, 20 minutes.
+2. **`vision.py::ingest_frame` + the SPIKE** — 3 evenings, hard cap. Narrow to one dish and a fixed
+   camera the moment it wobbles. Buy a gooseneck phone mount first; camera shake, not model error,
+   is how this fails.
+3. **Re-label the abstention corpus** with an independent `label_doneness`. The current metric
+   decides whether an abstention was justified by asking the very number it declared untrustworthy,
+   and it scores the steam and blocked-lens frames — the product's whole point — as mistakes.
+4. **Deploy AgentCore Memory** in ap-southeast-2 and film the session-1-vs-session-3 change. One
+   service really deployed beats six planned.
+5. **Write the mandatory Product Feedback artefact.** Five named questions per tool used. Distinct
+   from `docs/FRICTION.md`, and four of those six entries are about Ring and Vega — tracks not used.
+6. The hot Strands graph (perception / critic / risk / arbiter), then video and submission.
+
+### Open questions / blocked on
+- **Frame-source design.** A parallel review argued for JSONL scene files over in-Python keyframes,
+  sharing a parser with `evals/abstention.py`. Adopted its two substantive wins (the `age`
+  passthrough, and seeding on scenario switch); kept keyframes because the eval-corpus-as-demo-tape
+  coupling is one the same review then rejected as unsafe. Revisit only if scenarios start
+  multiplying.
+- Everything still open from session 1: camera source finally decided as **phone browser behind a
+  tunnel**; MCP Toolkit Private Preview decision date **3 Oct**; project name undecided.
+
+### Changed since last entry
+- Session 1's "verified end to end" claim corrected in place — see above.
+
 ## 2026-09-15 — session 1 (Cowork; handed over to Claude Code)
 
 ### Done this session
 - Track locked: **Alexa+**. Bee, Ring and Fire TV eliminated with evidence (ADR-0001).
 - Originality audit run; vision loop confirmed as prior art; positioning moved to the contract (ADR-0002).
-- Scaffold built and verified end to end: state cache, gated recipes, four-verdict gate, FastMCP streamable-HTTP server (5 tools + `ui://` resource), dual-transport panel, simulated vision source.
-- AgentCore layer wired: Memory calibration with local fallback, four Dogwood temporal policies + local evaluator, Strands steering on `advance_step`, abstention eval harness (ADR-0003).
+- Scaffold built: state cache, gated recipes, four-verdict gate, FastMCP streamable-HTTP server (5 tools + `ui://` resource), dual-transport panel, simulated vision source.
+  *(Corrected 2026-09-16: this entry originally read "verified end to end". It was not. `mcp` was never installed in this tree, so the server had never been booted; `pyproject` also resolved to mcp 2.x, which cannot import it. Verified for real on 16 Sep — see session 2.)*
+- AgentCore layer **written, not wired**: Memory calibration with local fallback, four Dogwood temporal policies + local evaluator, Strands steering on `advance_step`, abstention eval harness (ADR-0003). Neither `strands` nor `bedrock_agentcore` was installed or declared, so both degraded silently to local paths.
 - Tests passing: `test_gate.py`, `test_policy.py`, `test_steering.py`, `evals/abstention.py`.
 - Panel screenshots captured at 768×480 in both states.
 - AWS hackathon credits received.
