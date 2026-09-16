@@ -1,0 +1,51 @@
+// Dogwood temporal policies - the refusal contract, enforced at the tool boundary.
+//
+// Dogwood is a strict superset of Cedar; every valid Cedar policy is valid
+// Dogwood. It adds `formerly within`, `since within`, `count` and `sum`, which
+// condition a decision on what the agent has ALREADY DONE in this session -
+// scoped by the x-amzn-bedrock-agentcore-policy-session-id header.
+//
+// This is why the gate is a contract and not a suggestion: the model cannot
+// talk its way past a policy that reasons over its own action history.
+
+// 1. Advancing requires a passing gate observed in the last 20 seconds.
+//    Not "the model believes it is ready" - an actual recent observation.
+permit (
+  principal,
+  action == Action::"advance_step",
+  resource
+)
+when {
+  context.gate_passed formerly within 20 seconds
+};
+
+// 2. Alarm fatigue. Do not repeat the same refusal inside two minutes.
+//    Every incumbent nags; a coach that repeats itself gets muted, and a muted
+//    coach cannot warn you when it matters.
+forbid (
+  principal,
+  action == Action::"speak_refusal",
+  resource
+)
+when {
+  count(context.refusals_for_step) >= 1 since within 120 seconds
+};
+
+// 3. Danger is never rate-limited and never gated on confidence.
+//    A burning pan overrides every other rule in this file.
+permit (
+  principal,
+  action == Action::"speak_abort",
+  resource
+);
+
+// 4. Three corrections on the same step in one session means the threshold is
+//    wrong, not the cook. Stop gating that step and hand control back.
+forbid (
+  principal,
+  action == Action::"block_advance",
+  resource
+)
+when {
+  count(context.corrections_for_step) >= 3 since within 3600 seconds
+};

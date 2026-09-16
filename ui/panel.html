@@ -1,0 +1,84 @@
+<!doctype html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mise</title>
+<style>
+  :root{--bg:#14181E;--fg:#fff;--dim:#93a1b5;--wait:#E8B23A;--go:#38B87C;--stop:#E5484D;--track:#242B35}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:16px/1.35 "Amazon Ember",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+       padding:24px;display:flex;flex-direction:column;gap:16px;min-height:100vh}
+  .step{color:var(--dim);font-size:20px;letter-spacing:.02em}
+  .verdict{font-size:72px;font-weight:700;line-height:1;letter-spacing:-.02em}
+  .verdict.wait{color:var(--wait)} .verdict.proceed{color:var(--go)}
+  .verdict.abort{color:var(--stop)} .verdict.refuse{color:var(--dim)}
+  .reason{font-size:28px;max-width:22ch}
+  .meter{height:16px;border-radius:9999px;background:var(--track);overflow:hidden;position:relative}
+  .fill{height:100%;border-radius:9999px;background:var(--wait);transition:width .6s ease,background .3s}
+  .fill.proceed{background:var(--go)}
+  .gate{position:absolute;top:-4px;bottom:-4px;width:3px;background:#fff;opacity:.75}
+  .foot{margin-top:auto;display:flex;justify-content:space-between;color:var(--dim);font-size:18px}
+  .stale{opacity:.45}
+</style>
+<div class="step" id="step">Mise</div>
+<div class="verdict wait" id="verdict">…</div>
+<div class="reason" id="reason">Waiting for the first frame from the pan.</div>
+<div class="meter"><div class="fill" id="fill" style="width:0%"></div><div class="gate" id="gate" style="left:80%"></div></div>
+<div class="foot"><span id="instruction"></span><span id="eta"></span></div>
+
+<script>
+// Two transports, one panel.
+//  - inside an MCP Apps host: JSON-RPC over postMessage to the parent frame
+//  - in a plain browser (development): GET /dev/state on the same origin
+const inHost = window.parent !== window;
+let rpcId = 0; const pending = new Map();
+
+window.addEventListener("message", (e) => {
+  const m = e.data;
+  if (m && m.id !== undefined && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); }
+});
+
+function callTool(name, args = {}) {
+  return new Promise((resolve) => {
+    const id = ++rpcId;
+    pending.set(id, (msg) => {
+      const c = msg?.result?.structuredContent ?? msg?.result?.content?.[0]?.text;
+      resolve(typeof c === "string" ? JSON.parse(c) : c);
+    });
+    window.parent.postMessage(
+      { jsonrpc: "2.0", id, method: "tools/call", params: { name, arguments: args } }, "*"
+    );
+    setTimeout(() => { if (pending.has(id)) { pending.delete(id); resolve(null); } }, 4000);
+  });
+}
+
+const fetchState = () => inHost ? callTool("panel_state")
+                               : fetch("/dev/state").then(r => r.json()).catch(() => null);
+
+const VERDICT_TEXT = { wait: "NOT YET", proceed: "GO", abort: "OFF THE HEAT", refuse: "CAN'T TELL" };
+
+function render(s) {
+  if (!s) return;
+  const v = s.verdict || "refuse";
+  const el = document.getElementById("verdict");
+  el.textContent = VERDICT_TEXT[v] || "…";
+  el.className = "verdict " + v;
+  document.getElementById("reason").textContent = s.reason || s.evidence || "";
+  document.getElementById("step").textContent =
+    s.title ? `${s.title} — step ${(s.step ?? 0) + 1} of ${s.steps_total ?? "?"}` : "Mise";
+  document.getElementById("instruction").textContent = s.instruction || "";
+  document.getElementById("eta").textContent =
+    s.seconds_remaining ? `~${s.seconds_remaining}s` : "";
+  const fill = document.getElementById("fill");
+  fill.style.width = Math.round((s.doneness || 0) * 100) + "%";
+  fill.className = "fill" + (v === "proceed" ? " proceed" : "");
+  document.getElementById("gate").style.left = Math.round((s.gate ?? 0.8) * 100) + "%";
+  document.body.classList.toggle("stale", !!s.is_stale);
+}
+
+// The whole point: this keeps running after the voice turn ends.
+let timer = setInterval(async () => render(await fetchState()), 2000);
+fetchState().then(render);
+window.addEventListener("message", (e) => {
+  if (e.data?.method === "ui/resource-teardown") clearInterval(timer);
+});
+</script>
