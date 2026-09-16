@@ -40,14 +40,46 @@ Newest first. **Read this first in any new session.**
 - **Captured the MVP verification video** (`docs/demo/mvp-verification.mp4`, 47s) plus five panel
   screenshots including the two that never existed: `panel-refuse.png` and `panel-abort.png`.
 - Architecture, sequence and agent-topology diagrams in `docs/diagrams/`; design brief in
-  `docs/design-brief.html`.
+  `docs/design-brief.html` (published; kept current — v2 after the merge).
+- **Repo public and PR #1 merged** — `github.com/jwlai-cloud/mise`, Apache-2.0 detected by
+  GitHub, copyright holder named. Ten commits, all preserved (merge commit, not squash:
+  a judge may read `git log`). `master` is the default branch.
+- **The abstention metric was rewarding luck.** It judged a refusal by whether a noisy
+  estimate happened to land on the right side of the gate, which scored the steamed-lens
+  and blocked-pan frames — the product's whole point — as mistakes. Now judged on
+  `|doneness − label_doneness| > 0.15`, with an always-answer baseline and a risk-coverage
+  sweep. **The sweep reversed the plan:** there is a safe plateau from 0.35 to 0.85 where
+  risk is 0% and coverage is identical, so the 0.60 floor was never the problem and the
+  "too conservative, tune it down" task is cancelled.
+- **The real-frame path is built behind a seam.** `perception.py` is the only place a model
+  runs; nothing else imports boto3, and the whole ingest path is testable with no
+  credentials. Confidence is clamped in code to what the model admitted it could see and
+  can only ever fall. A failed call writes nothing — silence is how the system refuses.
+  The Bedrock call shape is verified against botocore's own service model (see LEARNING.md).
+- **Caught a bug I had introduced hours earlier:** `ScenarioSource` ticks at 1 Hz and was
+  started unconditionally, so a real frame would be overwritten within a second — point a
+  phone at a real pan and the panel shows the scripted one. Silent, and fatal to the demo.
+  First accepted frame now stands the scenario down; arming a scenario takes it back.
+- Also fixed from the same review: the `_ingesting` lock was checked before the body read,
+  so a second frame queued instead of being dropped.
+- Seven test suites green. Clean-venv `pip install -e .` installs and imports.
+- `docs/PRODUCT-FEEDBACK.md` written — a **required** submission element that did not exist,
+  distinct from the friction log. Friction log now at nine entries; 7-9 are the first about
+  tools this project actually uses.
+- ADR-0004: region is `AWS_REGION`, not architecture. Develop in the US, decide residency
+  from the spike's numbers.
 
 ### In progress (not done)
 - Nothing half-built. `ingest_frame` remains the one deliberate stub.
 
 ### Next (priority order)
-1. **Push the repo public.** There is still no git remote. Rules requirement, 20 minutes.
-2. **`vision.py::ingest_frame` + the SPIKE** — 3 evenings, hard cap. Narrow to one dish and a fixed
+0. **Two AWS blockers, both with the account owner, both gating everything else.** The
+   Anthropic use-case form (surfaces as `ResourceNotFoundException`, not an auth error;
+   no IAM policy works around it) and attaching `infra/deployer-policy.json` plus creating
+   the `mise-runtime` execution role (the CLI user cannot self-grant).
+1. **`BedrockVision.judge` is written but has never executed** — one `MISE_VISION_BACKEND=bedrock`
+   away once the above clears.
+2. **The SPIKE** — 3 evenings, hard cap. Narrow to one dish and a fixed
    camera the moment it wobbles. Buy a gooseneck phone mount first; camera shake, not model error,
    is how this fails.
 3. **Re-label the abstention corpus** with an independent `label_doneness`. The current metric
@@ -67,6 +99,15 @@ Newest first. **Read this first in any new session.**
   multiplying.
 - Everything still open from session 1: camera source finally decided as **phone browser behind a
   tunnel**; MCP Toolkit Private Preview decision date **3 Oct**; project name undecided.
+
+### Known gaps, recorded rather than hidden
+- `risk="watch"` is inert: `gate.py` has no branch for it and the panel never shows it, so
+  ambiguous haze routes into a band that does nothing. Either surface it or drop it.
+- The confidence clamp cannot catch a model that **misreports** the view. A clear-looking
+  frame of a genuinely ambiguous pan carries a 0.95 ceiling, and that is where every wrong
+  `proceed` will come from. Only a real labelled corpus will find it.
+- The Strands hot graph (perception / critic / risk / arbiter) is designed and diagrammed,
+  not built. The seam it would sit behind exists.
 
 ### Changed since last entry
 - Session 1's "verified end to end" claim corrected in place — see above.

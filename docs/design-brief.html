@@ -341,30 +341,43 @@
     <p>
       This brief separates what has been executed from what is designed. Every claim below marked
       <span class="tag t-run">runs</span> was run in this session against the tree at commit
-      <code>3890240</code>.
+      <code>ce28bad</code> (PR #1, merged). Where this brief once described a defect, it now
+      describes the fix and links the commit that made it.
     </p>
 
     <div class="note ok">
-      <strong>Verified by running it.</strong> The MCP server boots, negotiates protocol
-      <code>2025-11-25</code>, and exposes five tools plus <code>ui://mise/panel</code>. The gate,
-      policy and steering tests pass. <code>check_doneness</code> returns in single-digit
-      milliseconds because it reads a dictionary.
+      <strong>All four verdicts run, with no model, no camera and no AWS.</strong> Four scripted
+      scenarios drive the pan; each verdict is reachable in about two seconds via
+      <code>/dev/control</code> or <code>?name=steam&amp;at=40</code>. Verified live over HTTP and
+      through a real MCP client at protocol <code>2025-11-25</code>. Captured as
+      <code>docs/demo/mvp-verification.mp4</code> and five panel screenshots — including the two
+      the repo never had, <code>panel-refuse.png</code> and <code>panel-abort.png</code>.
     </div>
 
-    <div class="note bad">
-      <strong>Broken on a clean clone, today.</strong> <code>pyproject.toml</code> pins
-      <code>mcp&gt;=1.27</code>, which now resolves to <b>mcp 2.2.0</b>, where
-      <code>mcp.server.fastmcp</code> no longer exists — <code>FastMCP</code> was renamed
-      <code>MCPServer</code>. The README's own install command fails. The rules require the repo to
-      contain "all source code, assets, and instructions needed to run your project." One-line fix:
-      pin <code>mcp&gt;=1.27,&lt;2</code>.
+    <div class="note ok">
+      <strong>A clean clone installs and imports.</strong> <code>mcp</code> is capped below 2.0:
+      an uncapped <code>&gt;=1.27</code> resolved to 2.2.0, where <code>mcp.server.fastmcp</code>
+      no longer exists. Seven test suites pass. The AWS layers are declared as a
+      <code>[aws]</code> extra rather than silently absent.
     </div>
 
     <div class="note warn">
-      <strong>Not yet executed.</strong> Neither <code>strands</code> nor
-      <code>bedrock_agentcore</code> is installed or listed as a dependency, so the Strands steering
-      layer and the AgentCore Memory path both silently no-op. <code>vision.py::ingest_frame</code>
-      raises <code>NotImplementedError</code>. Nothing is deployed to AWS.
+      <strong>Still not executed: the model itself.</strong> <code>BedrockVision.judge</code> is
+      written against a call shape verified in botocore's own service model, but has never run —
+      blocked on an unsubmitted Anthropic use-case form and an IAM grant, neither of which is code.
+      Policies are ready in <code>infra/</code>. Nothing is deployed to AWS.
+    </div>
+
+    <div class="note bad">
+      <strong>Five contract bugs found and fixed, each with a regression test.</strong>
+      Rule 2's cooldown was keyed on step rather than verdict, so a plain <code>wait</code>
+      silenced a genuine <code>refuse</code> and the voice spoke a readiness claim about a frame it
+      had just declined to read. Rule 4 promised to hand control back and never did.
+      <code>STORE.write()</code> stamped the write rather than the shutter, so a 2-3&nbsp;s vision
+      call would have read as freshness. Calibration was resolved by mutating a shared
+      <code>Step</code>, so the panel showed a stale gate. And the scripted pan kept writing at
+      1&nbsp;Hz alongside the camera — point a phone at a real hob and the panel would have shown
+      the simulated one.
     </div>
   </section>
 
@@ -468,8 +481,8 @@
           <tr>
             <td>PerceptionAgent</td>
             <td>every frame tick</td>
-            <td>Needs a vision model and structured output. The only node that must call Bedrock every tick.</td>
-            <td><span class="tag t-gap">unbuilt</span></td>
+            <td>Needs a vision model and structured output. The only node that must call Bedrock every tick. <b>The seam around it is built</b>: <code>perception.py</code> validates every reading, clamps confidence to what the model admitted it could see, and drops the frame rather than guessing. Only the Strands <code>Graph</code> wrapper and the first real invocation are missing.</td>
+            <td><span class="tag t-plan">seam built</span></td>
           </tr>
           <tr>
             <td>CriticAgent</td>
@@ -779,24 +792,28 @@ when { count(context.corrections_for_step) &gt;= 3 since within 3600 seconds };<
     </div>
 
     <ol class="phases">
-      <li><span class="cost">~2 h</span><b>Make <code>refuse</code> and <code>abort</code> reachable</b>
-        The simulator hardcodes <code>confidence=0.88</code>, <code>risk="none"</code> and writes every second, so neither verdict can occur and the pan pins at doneness 1.0 forty-five seconds after boot. Replace it with a scriptable frame sequence that steams the lens, goes silent, and catches. This unblocks the video whether or not the vision model lands.</li>
-      <li><span class="cost">~30 min</span><b>Fix the refusal flattening</b>
-        Exempt <code>refuse</code> from the rule-2 cooldown, or at minimum change the suppressed string to <code>"I still can't tell."</code></li>
-      <li><span class="cost">~20 min</span><b>Pin <code>mcp&lt;2</code>, push the repo public</b>
-        Both are hard rules requirements. There is currently no git remote at all.</li>
-      <li><span class="cost">~1 h</span><b>Correct the docs that overstate</b>
-        PROGRESS.md claims end-to-end verification of a server whose dependency does not install. Add <code>strands-agents</code> and <code>bedrock-agentcore</code> as extras, or drop the three-layer claim from the README table.</li>
+      <li><span class="cost">done</span><b>All four verdicts reachable</b>
+        <code>ScenarioSource</code> replaced the simulator, which hardcoded <code>confidence=0.88</code> and <code>risk="none"</code> and pinned the pan at 1.0 after forty-five seconds. Four scenarios, deterministic, restartable, seekable. Frames carry their own <code>age</code>, so staleness lands in one tick instead of fifteen seconds of motionless screen.</li>
+      <li><span class="cost">done</span><b>The refusal contract holds</b>
+        Cooldowns keyed per verdict; rule 4 wired into the ledger where all three enforcement layers read it, with danger excluded at both ends and a <code>risk != "urgent"</code> guard added to the Dogwood rule — <code>forbid</code> beats <code>permit</code>, so without it rule 4 would have forbidden blocking an advance over a burning pan.</li>
+      <li><span class="cost">done</span><b>Public repo, licence, clean install</b>
+        <code>jwlai-cloud/mise</code>, Apache-2.0 detected by GitHub, copyright holder named. <code>mcp&lt;2</code> pinned.</li>
+      <li><span class="cost">done</span><b>Docs corrected where they overstated</b>
+        PROGRESS.md's "verified end to end" corrected in place; the three-layer table now says which layers run; the abstention figure relabelled as the smoke test it is.</li>
+      <li><span class="cost">done</span><b>The abstention metric rewards calibration, not luck</b>
+        It judged a refusal by whether a noisy estimate happened to land on the right side of the gate, scoring the steamed-lens and blocked-pan frames — the product's whole point — as mistakes. Now judged on <code>|doneness − label_doneness| &gt; 0.15</code>, with a risk-coverage sweep. That sweep reversed the plan: there is a safe plateau from 0.35 to 0.85 and the current floor was never the problem.</li>
+      <li><span class="cost">done</span><b>The real-frame path, behind a seam</b>
+        <code>perception.py</code> is the only place a model runs. Confidence is clamped in code to what the model admitted it could see, and can only ever fall. A failed call writes nothing — silence is how the system refuses.</li>
+      <li><span class="cost">yours · blocks everything</span><b>The Anthropic use-case form and the IAM grant</b>
+        The form gates every model call in every region and surfaces as <code>ResourceNotFoundException</code>, not an auth error. <code>infra/deployer-policy.json</code> and the <code>mise-runtime</code> execution role need an admin principal — the CLI user cannot self-grant.</li>
       <li><span class="cost">3 evenings, hard cap</span><b>The vision spike</b>
-        Three real cooks, a frame every 3 s, hand-labelled. Pass is monotonic and within ±0.15. If it wobbles, narrow to one dish and a fixed camera <em>that night</em> rather than spending a second week.</li>
-      <li><span class="cost">~3 h</span><b>Re-label the abstention eval</b>
-        Add an independent <code>label_doneness</code> so the counterfactual stops being computed from the very number the system declared untrustworthy. Lead with <b>risk 0% at 70% coverage</b>, not the 33%.</li>
+        Three real cooks, fixed camera, a frame every 3&nbsp;s, labelled with a continuous <code>label_doneness</code>. Deliberately shoot the degraded frames too — steam, a hand, a knocked phone — because a corpus of clean frames cannot measure abstention at all. Buy the gooseneck mount first: camera shake is how this fails.</li>
       <li><span class="cost">~6 h</span><b>Deploy AgentCore Memory for real</b>
-        One service actually deployed beats six planned. Film the session-1-vs-session-3 behaviour change.</li>
+        One service actually deployed beats six planned. Film the session-1-vs-session-3 change.</li>
       <li><span class="cost">~6 h</span><b>The hot graph</b>
-        Perception, critic, risk, arbiter. Turn on Observability and keep the trace waterfall — it is the proof the critic is conditional.</li>
+        Perception, critic, risk, arbiter. Turn on Observability and keep the trace waterfall — it is the proof the critic is conditional rather than decorative.</li>
       <li><span class="cost">~12 h</span><b>Video and submission</b>
-        Under three minutes, public on YouTube or Vimeo, showing the MCP server in action.</li>
+        Under three minutes, public, showing the MCP server in action. The 47-second capture is the raw material.</li>
     </ol>
 
     <div class="col">
@@ -831,7 +848,7 @@ when { count(context.corrections_for_step) &gt;= 3 since within 3600 seconds };<
           <tr>
             <td>Design</td>
             <td>"Does the project deliver a <b>complete</b>, coherent product experience?"</td>
-            <td>"Complete" is the operative word and four verdicts where two are unreachable is not complete. Note that design here is also the <em>voice</em>: <code>Decision.spoken()</code> is a spoken-language spec under a 30 s budget with a deliberate refusal register. Write that up; it is a real design artefact.</td>
+            <td>"Complete" was the operative word, and four verdicts where two were unreachable was not complete. All four now run and are filmed. Note that design here is also the <em>voice</em>: <code>Decision.spoken()</code> is a spoken-language spec under a 30&nbsp;s budget where each verdict keeps its own register and a shortened refusal is still a refusal. That is a real design artefact — write it up rather than leaving it as an implementation detail.</td>
           </tr>
           <tr>
             <td>Potential Impact</td>
@@ -862,9 +879,14 @@ when { count(context.corrections_for_step) &gt;= 3 since within 3600 seconds };<
       in three places," which invites the question of how many of the three are deployed.
     </p>
     <div class="note bad">
-      <strong>The single biggest risk is not the vision model.</strong> It is spending three weeks
-      deepening a scaffold whose differentiating verdict has never appeared on screen, then finding in
-      week five that there is no footage of the thing being pitched. Phase 01 is two hours. Do it first.
+      <strong>That risk is now retired.</strong> It was spending three weeks deepening a scaffold
+      whose differentiating verdict had never appeared on screen. It has now appeared, been
+      filmed, and been locked behind regression tests. <strong>The biggest remaining risk is
+      calibration:</strong> a clear-looking frame of a genuinely ambiguous pan carries a 0.95
+      confidence ceiling, the clamp cannot catch a model that misreports the view, and that is
+      where every wrong <code>proceed</code> this system ever gives will come from. Only a real
+      labelled corpus and the risk-coverage sweep will find it — which makes the two AWS blockers
+      the critical path, not the code.
     </div>
   </section>
 
