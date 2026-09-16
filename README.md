@@ -231,7 +231,10 @@ python3 evals/abstention.py             # abstention quality over labelled frame
 | `src/mise/policy.py` | the refusal contract, locally evaluable |
 | `src/mise/steering.py` | Strands steering at the tool boundary |
 | `policies/mise.dogwood` | the Dogwood temporal policy source |
-| `evals/abstention.py` | abstention quality, not accuracy |
+| `evals/abstention.py` | the **pan** eval — abstention quality, not accuracy |
+| `evals/trajectory.py` | the **agent** eval — did the graph take a sane path |
+| `evals/opik_pack.py` | optional Opik wrapper for comparing model profiles |
+| `src/mise/agents.py` | the hot graph — perception, a conditional critic, risk, arbiter |
 | `ui/panel.html` | the live panel; works in an MCP host *and* a plain browser |
 | `ui/control.html` | demo remote — one button per verdict, never in the shot |
 | `ui/camera.html` | the phone: grab a frame, POST the JPEG, forget it |

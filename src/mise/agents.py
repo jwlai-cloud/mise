@@ -288,12 +288,38 @@ async def judge_frame(graph, goal: str) -> Reading:
         got = getattr(r, "structured_output", None)
         return got if isinstance(got, kind) else None
 
-    reading = arbitrate(out("perceive", PanReading),
-                        out("critique", CriticVerdict),
-                        out("risk", RiskReport))
+    perception = out("perceive", PanReading)
+    reading = arbitrate(perception, out("critique", CriticVerdict), out("risk", RiskReport))
+
+    # Strands traces the mechanics - which agent ran, tokens, tool calls - but
+    # nothing about a pan. The trajectory evaluator needs the domain values to
+    # judge "confidence only ever fell" and "the critic ran where it mattered",
+    # so emit them on one span of our own. Without this the evaluator can see
+    # the shape of a run and none of its meaning.
+    _record_frame_span(perception, reading)
+
     log.info("graph ran %s -> %s",
              [n.node_id for n in getattr(result, "execution_order", [])], reading.evidence)
     return reading
+
+
+def _record_frame_span(perception: PanReading | None, reading: Reading) -> None:
+    """One span carrying what the frame actually decided. Never raises: a
+    telemetry failure must not drop a frame."""
+    try:
+        from opentelemetry import trace as trace_api
+
+        tracer = trace_api.get_tracer("mise.agents")
+        with tracer.start_as_current_span("mise.frame") as span:
+            if perception is not None:
+                span.set_attribute("mise.doneness", perception.doneness)
+                span.set_attribute("mise.confidence_in", perception.confidence)
+                span.set_attribute("mise.view", perception.view)
+            span.set_attribute("mise.confidence_out", reading.confidence)
+            span.set_attribute("mise.risk", reading.risk)
+            span.set_attribute("mise.wrote", True)
+    except Exception as exc:                      # no otel, no provider, no matter
+        log.debug("frame span not recorded: %s", exc)
 
 
 class GraphVision:

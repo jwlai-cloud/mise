@@ -38,6 +38,12 @@ decline to judge at all when it can't see properly.
   `docs/PROGRESS.md` (every session), `docs/LEARNING.md`, `docs/FRICTION.md`.
 - `docs/FRICTION.md` is worth up to **10% of the judging score**. Add to it whenever
   a platform wastes your time. Nine entries are banked.
+- **Two evals, two objects, not alternatives.** `evals/abstention.py` scores the
+  *pan* (one labelled corpus, offline, no AWS). `evals/trajectory.py` scores the
+  *agent* (real OTEL traces). AgentCore Evaluations does the second and cannot do
+  the first — `StartBatchEvaluation` takes CloudWatch log groups, never a corpus.
+- Strands emits only `gen_ai.*` mechanics. The domain values a trajectory
+  evaluator needs come from the `mise.frame` span in `agents.py`.
 - `docs/SUBMISSION.md` is the Devpost writeup. Sections marked **[SPIKE]** are
   placeholders for perception numbers that do not exist yet — fill or cut them, never
   ship an unearned claim. It ends in a pre-submission checklist.

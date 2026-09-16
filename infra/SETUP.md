@@ -136,3 +136,58 @@ a critic call only near the gate. A 90-second demo step is roughly 30 perception
 **Set a budget alarm anyway** — a loop left running overnight is the classic way
 to find out otherwise. Console → **Billing** → **Budgets** → a $20 monthly alert
 costs nothing and takes two minutes.
+
+---
+
+## Step 5 — the evaluators  ·  *after step 4, optional but this is the AWS Builder story*
+
+Two evals, two objects. They are **not** alternatives and neither replaces the other:
+
+| | scores | needs AWS |
+|---|---|---|
+| `evals/abstention.py` | the **pan** — one labelled corpus, offline. "Does this model read the pan to ±0.15, and decline when it can't see?" | no |
+| `evals/trajectory.py` | the **agent** — real traces. "Did `perceive → critique → risk → arbitrate` fire in the right shape, and did the critic run only where a mistake was expensive?" | yes |
+
+AgentCore Evaluations does the second and **cannot do the first**:
+`StartBatchEvaluation`'s `dataSourceConfig` accepts CloudWatch log groups or an
+online-eval config — never a JSONL corpus — and `Evaluate` takes OTEL
+`sessionSpans`. Its `level` enum is `TOOL_CALL | TRACE | SESSION`. It is a trace
+product, so the perception corpus stays where it is.
+
+### Deploy the codeBased evaluator
+
+`codeBased` takes a **`lambdaArn`**, not inline code, so the trajectory rules ship
+as a Lambda. They are plain functions in `evals/trajectory.py` and
+`tests/test_trajectory.py` exercises them offline, so the Lambda is a wrapper
+rather than the only copy.
+
+```bash
+cd evals && zip -q /tmp/mise-trajectory.zip trajectory.py && cd ..
+
+aws lambda create-function --function-name mise-trajectory \
+  --runtime python3.12 --handler trajectory.lambda_handler \
+  --role arn:aws:iam::034355008385:role/mise-runtime \
+  --zip-file fileb:///tmp/mise-trajectory.zip --timeout 30
+
+export MISE_TRAJECTORY_LAMBDA_ARN=$(aws lambda get-function \
+  --function-name mise-trajectory --query Configuration.FunctionArn --output text)
+```
+
+`evals/trajectory.py::evaluator_definitions()` returns the two `CreateEvaluator`
+bodies — the codeBased one above, and an `llmAsAJudge` for the one genuinely
+judgement-shaped question ("could a cook verify that evidence sentence by
+glancing at the pan?"). Their shapes are asserted against the real API enums in
+`tests/test_trajectory.py`.
+
+### Feed it traces
+
+```bash
+export OTEL_EXPORTER_OTLP_ENDPOINT=<AgentCore Observability endpoint>
+```
+
+`mise.agents.enable_tracing()` turns on the exporter. The graph emits a
+`mise.frame` span carrying `doneness`, `confidence_in`, `confidence_out`, `risk`
+and `wrote` — **Strands itself emits only `gen_ai.*` mechanics (tokens, tool
+names), none of the domain values**, so without that span the evaluator can see
+the shape of a run and none of its meaning. Then `StartBatchEvaluation` over the
+log group, or `CreateOnlineEvaluationConfig` to score continuously.

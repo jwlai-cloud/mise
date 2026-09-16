@@ -8,7 +8,11 @@
       "Resource": "*",
       "Condition": {
         "StringEquals": {
-          "aws:RequestedRegion": ["us-east-1", "us-west-2", "ap-southeast-2"]
+          "aws:RequestedRegion": [
+            "us-east-1",
+            "us-west-2",
+            "ap-southeast-2"
+          ]
         }
       }
     },
@@ -54,6 +58,20 @@
         "xray:PutTelemetryRecords"
       ],
       "Resource": "*"
+    },
+    {
+      "Sid": "TrajectoryEvaluatorLambda",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:CreateFunction",
+        "lambda:GetFunction",
+        "lambda:UpdateFunctionCode",
+        "lambda:UpdateFunctionConfiguration",
+        "lambda:AddPermission",
+        "lambda:InvokeFunction",
+        "lambda:DeleteFunction"
+      ],
+      "Resource": "arn:aws:lambda:*:*:function:mise-*"
     },
     {
       "Sid": "DeploymentArtifacts",
@@ -108,7 +126,10 @@
       "Resource": "arn:aws:iam::*:role/mise-*",
       "Condition": {
         "StringEquals": {
-          "iam:PassedToService": "bedrock-agentcore.amazonaws.com"
+          "iam:PassedToService": [
+            "bedrock-agentcore.amazonaws.com",
+            "lambda.amazonaws.com"
+          ]
         }
       }
     }
