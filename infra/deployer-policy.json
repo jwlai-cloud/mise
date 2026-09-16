@@ -2,14 +2,18 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "AgentCoreControlAndData",
+      "Sid": "AgentCoreEverything",
       "Effect": "Allow",
       "Action": "bedrock-agentcore:*",
       "Resource": "*",
-      "Condition": {"StringEquals": {"aws:RequestedRegion": "ap-southeast-2"}}
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": ["us-east-1", "us-west-2", "ap-southeast-2"]
+        }
+      }
     },
     {
-      "Sid": "BedrockModelsInRegion",
+      "Sid": "BedrockModelsAndProfiles",
       "Effect": "Allow",
       "Action": [
         "bedrock:ListFoundationModels",
@@ -21,17 +25,73 @@
         "bedrock:Converse",
         "bedrock:ConverseStream"
       ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DeploySubstrate",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:CompleteLayerUpload",
+        "ecr:CreateRepository",
+        "ecr:DescribeRepositories",
+        "ecr:InitiateLayerUpload",
+        "ecr:PutImage",
+        "ecr:UploadLayerPart",
+        "codebuild:CreateProject",
+        "codebuild:BatchGetBuilds",
+        "codebuild:ListProjects",
+        "codebuild:StartBuild",
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams",
+        "logs:GetLogEvents",
+        "logs:PutLogEvents",
+        "xray:GetSamplingRules",
+        "xray:PutTraceSegments",
+        "xray:PutTelemetryRecords"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DeploymentArtifacts",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:PutObject"
+      ],
       "Resource": [
-        "arn:aws:bedrock:ap-southeast-2:*:inference-profile/au.*",
-        "arn:aws:bedrock:*::foundation-model/*"
+        "arn:aws:s3:::bedrock-agentcore-*",
+        "arn:aws:s3:::bedrock-agentcore-*/*",
+        "arn:aws:s3:::mise-*",
+        "arn:aws:s3:::mise-*/*"
       ]
     },
     {
-      "Sid": "CreateAndPassTheRuntimeExecutionRole",
+      "Sid": "InboundAuthForTheRuntime",
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:CreateUserPool",
+        "cognito-idp:CreateUserPoolClient",
+        "cognito-idp:DescribeUserPool",
+        "cognito-idp:DescribeUserPoolClient",
+        "cognito-idp:ListUserPools",
+        "cognito-idp:AdminCreateUser",
+        "cognito-idp:AdminSetUserPassword"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CreateTheRuntimeExecutionRole",
       "Effect": "Allow",
       "Action": [
         "iam:CreateRole",
         "iam:GetRole",
+        "iam:ListRoles",
         "iam:TagRole",
         "iam:PutRolePolicy",
         "iam:GetRolePolicy",
@@ -47,7 +107,9 @@
       "Action": "iam:PassRole",
       "Resource": "arn:aws:iam::*:role/mise-*",
       "Condition": {
-        "StringEquals": {"iam:PassedToService": "bedrock-agentcore.amazonaws.com"}
+        "StringEquals": {
+          "iam:PassedToService": "bedrock-agentcore.amazonaws.com"
+        }
       }
     }
   ]

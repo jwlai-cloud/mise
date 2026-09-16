@@ -17,6 +17,14 @@ dependencies = ["mcp>=1.27,<2", "pydantic>=2", "uvicorn>=0.30", "starlette>=0.37
 # botocore>=1.43 is a hard floor, not a preference: 1.42.9 has no `outputConfig`
 # in its bedrock-runtime model, so structured output fails client-side.
 aws = ["strands-agents", "bedrock-agentcore", "boto3", "botocore>=1.43.0"]
+# Opik wraps evals/abstention.py; it never replaces it. `python3 evals/opik_pack.py`
+# prints the same harness report when this extra is absent, so the no-credentials
+# path is unchanged. >=2.0 is the floor for `experiment_scoring_functions`, which is
+# where the corpus-level ratios have to live - see the module docstring.
+evals = ["opik>=2.0,<3"]
+# Strands emits OpenTelemetry; Opik ingests OTLP over HTTP only (the gRPC exporter
+# errors). Needed only to trace the agent graph, not to run the eval.
+otel = ["opentelemetry-sdk", "opentelemetry-exporter-otlp-proto-http"]
 # The hot graph. strands-agents runs offline against a scripted model provider,
 # so this is installable and testable with no AWS account at all.
 agents = ["strands-agents>=1.56"]
