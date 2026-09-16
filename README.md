@@ -187,6 +187,7 @@ python3 evals/abstention.py             # abstention quality over labelled frame
 | `docs/SPIKE.md` | The three questions that retire the risk |
 | `docs/FRICTION.md` | Friction log — the optional 10% judging bonus |
 | `docs/PRODUCT-FEEDBACK.md` | **Required** submission element: the five questions, per tool |
+| `docs/SUBMISSION.md` | The Devpost writeup, with a pre-submission checklist |
 | `docs/LEARNING.md` | Tech breakdown with primary sources |
 
 Copyright 2026 Junwei Lai. Licensed under the Apache License, Version 2.0 — see

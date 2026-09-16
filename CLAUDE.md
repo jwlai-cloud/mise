@@ -38,6 +38,9 @@ decline to judge at all when it can't see properly.
   `docs/PROGRESS.md` (every session), `docs/LEARNING.md`, `docs/FRICTION.md`.
 - `docs/FRICTION.md` is worth up to **10% of the judging score**. Add to it whenever
   a platform wastes your time. Nine entries are banked.
+- `docs/SUBMISSION.md` is the Devpost writeup. Sections marked **[SPIKE]** are
+  placeholders for perception numbers that do not exist yet — fill or cut them, never
+  ship an unearned claim. It ends in a pre-submission checklist.
 - `docs/PRODUCT-FEEDBACK.md` is a **required** submission element and a different
   artefact: five named questions per tool, API or SDK actually used. Keep it honest
   about what was run versus only designed against — overstating depth is easier for
