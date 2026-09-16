@@ -13,6 +13,8 @@ take of.
 from __future__ import annotations
 
 import asyncio
+import logging
+import time
 from pathlib import Path
 
 from starlette.concurrency import run_in_threadpool
@@ -22,6 +24,8 @@ from starlette.routing import Route
 from .server import mcp, panel_state, start_recipe, _session
 from .vision import DEFAULT_SCENARIO, SCENARIOS, ScenarioSource, ingest_frame
 
+log = logging.getLogger(__name__)
+
 UI = Path(__file__).resolve().parents[2] / "ui"
 
 # The scenarios are written against step 1 of the soffritto - the onions, the
@@ -30,6 +34,18 @@ UI = Path(__file__).resolve().parents[2] / "ui"
 DEMO_RECIPE, DEMO_STEP = "soffritto-demo", 1
 
 SOURCE = ScenarioSource(DEFAULT_SCENARIO)
+
+# Exactly one writer to STORE at a time. The scripted pan owns it until a real
+# frame lands; after that the camera does, until an operator arms a scenario.
+_live_camera = False
+
+
+def stop_scenarios(why: str) -> None:
+    global _live_camera
+    if not _live_camera:
+        _live_camera = True
+        SOURCE.stop()
+        log.info("scripted pan stopped: %s", why)
 
 # One frame in flight at a time. Drop the rest rather than queue them: a stale
 # answer is worse than no answer, and state.is_stale reports the gap honestly.
@@ -62,11 +78,13 @@ async def dev_scenarios(_request):
         "scenarios": sorted(SCENARIOS),
         "running": SOURCE.name,
         "elapsed": round(SOURCE.elapsed, 1),
+        "source": "camera" if _live_camera else "scenario",
     })
 
 
 async def dev_scenario(request):
     """The operator's remote. One call puts the whole rig in a known state."""
+    global _live_camera
     name = request.query_params.get("name", SOURCE.name)
     at = float(request.query_params.get("at", 0))
     try:
@@ -80,7 +98,13 @@ async def dev_scenario(request):
     # click is always enough to reach the verdict being demonstrated.
     start_recipe(DEMO_RECIPE)
     _session["step_index"] = DEMO_STEP
-    return JSONResponse({"running": name, "at": at, "recipe": DEMO_RECIPE, "step": DEMO_STEP})
+    # Arming a scenario takes the store back from the camera, so an operator can
+    # always recover the rig mid-shoot without restarting the server.
+    if _live_camera:
+        _live_camera = False
+        SOURCE.resume()
+    return JSONResponse({"running": name, "at": at, "recipe": DEMO_RECIPE,
+                         "step": DEMO_STEP, "source": "scenario"})
 
 
 async def dev_reset(_request):
@@ -106,23 +130,40 @@ async def dev_reset(_request):
 
 async def ingest(request):
     """Real frames from the phone. Never called by an MCP tool."""
-    if _ingesting.locked():
-        return JSONResponse({"dropped": True, "reason": "a frame is already in flight"})
+    # Stamp the shutter BEFORE the model runs. A vision call costs seconds, and
+    # is_stale has to measure the age of the view, not our own latency.
+    captured_at = time.time()
     body = await request.body()
     if not body:
         return JSONResponse({"error": "empty frame"}, status_code=400)
+    # Check the lock AFTER reading the body, immediately before taking it.
+    # Checking earlier lets a second frame pass the test and then queue on the
+    # lock instead of being dropped, which is the backlog this design exists to
+    # avoid: by the time it ran, the pan would have moved on.
+    if _ingesting.locked():
+        return JSONResponse({"dropped": True, "reason": "a frame is already in flight"})
     async with _ingesting:
         try:
-            await run_in_threadpool(ingest_frame, body)
+            wrote = await run_in_threadpool(ingest_frame, body, captured_at)
         except NotImplementedError:
-            # Expected until the week-1 spike lands. Say so plainly rather than
-            # 500-ing at a phone that is doing nothing wrong.
+            # The Bedrock call is the one unimplemented piece. Say so plainly
+            # rather than 500-ing at a phone that is doing nothing wrong.
             return JSONResponse(
                 {"accepted": False, "bytes": len(body),
-                 "reason": "vision model not wired yet - run a /dev/scenario instead"},
+                 "reason": "vision backend not wired yet - run a /dev/scenario instead"},
                 status_code=501,
             )
-    return JSONResponse({"accepted": True, "bytes": len(body)})
+    if wrote:
+        # A real camera has arrived, so the scripted pan must stop writing.
+        # Both write to the same STORE and the scenario ticks at 1 Hz, so
+        # leaving it running means the script wins the last write and the panel
+        # shows a simulated pan while a real one is on the hob. Silent, and
+        # fatal to the demo it was built for.
+        stop_scenarios("a real frame arrived")
+    # A dropped frame is not an error: the view simply ages until the gate
+    # refuses. Report it honestly rather than acknowledging a discard.
+    return JSONResponse({"accepted": bool(wrote), "bytes": len(body),
+                         "source": "camera" if _live_camera else SOURCE.name})
 
 
 app = mcp.streamable_http_app()

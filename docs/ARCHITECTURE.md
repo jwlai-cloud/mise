@@ -25,7 +25,8 @@ Last updated 2026-09-16.
 | Gate | `src/mise/gate.py` | Deterministic decision → `proceed` / `wait` / `refuse` / `abort`. No model involved. |
 | MCP server | `src/mise/server.py` | FastMCP, streamable HTTP, stateless, JSON responses. Five tools + the `ui://` resource. |
 | Panel | `ui/panel.html` | Dual transport: JSON-RPC over `postMessage` in an MCP host, plain fetch in a browser. |
-| Vision loop | `src/mise/vision.py` | `ScenarioSource` today: scripted keyframes that reach all four verdicts with no model. `ingest_frame()` is the one unimplemented function. |
+| Vision loop | `src/mise/vision.py` | `ScenarioSource` (scripted keyframes, all four verdicts, no model) and `ingest_frame()` (real frames). Exactly one of them owns `STORE` at a time. |
+| Perception | `src/mise/perception.py` | The only place a model runs. `ScriptedVision` for offline tests, `BedrockVision` for real frames. Validates every reading and clamps confidence to what the model admitted it could see. |
 | Memory | `src/mise/memory.py` | AgentCore Memory (user-preference strategy, namespace `cook/{actorId}/hob/`). Local JSON fallback. |
 | Policy | `src/mise/policy.py` | Local mirror of the four Dogwood rules; session ledger of gate observations, refusals, corrections. |
 | Steering | `src/mise/steering.py` | Strands `BeforeToolCallEvent` handler guarding `advance_step`. |
@@ -55,6 +56,18 @@ Resource: `ui://mise/panel`, mime `text/html;profile=mcp-app`.
 
 - **Alexa+ tool round-trip ≈ 500ms.** No model call inside a tool, ever.
 - **Alexa+ is turn-based.** No proactive push, no long-running tools. Voice cannot interrupt; the panel can.
+- **One writer to `STORE` at a time.** The scripted pan ticks at 1 Hz, so leaving it
+  running while a camera feeds `/ingest` means the script wins the last write and the
+  panel shows a simulated pan with a real one on the hob. The first accepted frame
+  stops it; arming a scenario takes it back.
+- **A failed model call writes nothing.** Not a low-confidence placeholder, nothing.
+  Silence lets the last frame age until the gate refuses on its own, so the failure
+  path and the staleness path are the same path. A partial write would carry the
+  previous `risk` forward under a fresh timestamp.
+- **Confidence can only fall after the model speaks.** `view` and `obstructions` set a
+  ceiling that is re-applied in code, because a prompt asking for care is a request and
+  a lookup table is a guarantee. It cannot catch a model that misreports the view —
+  that is the residual risk, and it is where a wrong `proceed` will come from.
 - **A frame's timestamp is when it was taken, not when it was stored.** `STORE.write()`
   takes `updated_at` so `is_stale` measures the age of the *view*. Stamping the write
   would make a 2-3s vision call look like 2-3s of freshness it never had.

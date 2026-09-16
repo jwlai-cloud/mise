@@ -14,11 +14,15 @@ the camera doesn't.
 """
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from dataclasses import dataclass
 
+from .perception import MODEL, PerceptionError
 from .state import STORE, Risk
+
+log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -214,21 +218,77 @@ class ScenarioSource:
         return self
 
     def stop(self) -> None:
+        """Stand down. Called when a real camera takes over the store."""
         self._stop.set()
 
+    def resume(self, name: str | None = None, at: float = 0.0) -> "ScenarioSource":
+        """Take the store back. The run loop exits on stop(), so this needs a
+        fresh event and a fresh thread - an operator has to be able to recover
+        the rig mid-shoot without restarting the server."""
+        self._stop = threading.Event()
+        self._thread = None
+        self.restart(name, at)
+        return self.start()
 
-def ingest_frame(jpeg_bytes: bytes) -> None:
-    """Real frames land here. Week-1 spike.
+    @property
+    def running(self) -> bool:
+        return self._thread is not None and not self._stop.is_set()
 
-    Send the frame to a vision model with a structured-output schema matching
-    CookState, then STORE.write(**result). Throttle to roughly one call every
-    2-3 seconds; drop frames rather than queue them, because a stale answer is
-    worse than no answer - state.is_stale already handles the gap honestly.
 
-    The caller (app.py::ingest) already drops frames while one is in flight, so
-    this function may block. It must never be called from an MCP tool.
+def ingest_frame(jpeg_bytes: bytes, captured_at: float | None = None,
+                 goal: str | None = None) -> bool:
+    """Real frames land here. Blocking; never called from an MCP tool.
+
+    `captured_at` is when the shutter fired, not when the model answered. Passing
+    it through is the whole reason STORE.write takes a timestamp: a vision call
+    costs two or three seconds, and stamping the write would hand the gate a
+    frame that looks fresher than the view actually is.
+
+    On any failure this writes NOTHING and lets the previous frame age. That is
+    not an oversight - silence is how the system refuses. Writing an invented
+    low-confidence reading to represent "the call failed" would be guessing about
+    the pan, and the gate cannot tell a guess from an observation.
+
+    The caller (app.py::ingest) drops frames while one is in flight, so there is
+    no queue and no backlog: a slow model costs frame rate, never freshness.
+
+    Returns whether the frame actually reached the cache, so the route can tell
+    the phone the truth instead of acknowledging a frame it discarded.
     """
-    raise NotImplementedError("Week 1: wire a vision model here.")
+    captured_at = time.time() if captured_at is None else captured_at
+    if goal is None:
+        goal = current_goal()
+
+    try:
+        reading = MODEL.judge(jpeg_bytes, goal)
+    except PerceptionError as exc:
+        log.warning("dropped frame: %s", exc)
+        return False
+    except Exception as exc:                      # throttling, auth, network
+        log.warning("vision call failed (%s): %s", type(exc).__name__, exc)
+        return False
+
+    STORE.write(updated_at=captured_at, **reading.as_state_fields())
+    return True
+
+
+def current_goal() -> str:
+    """What the model is being asked to judge against, in plain words.
+
+    Read from the running session rather than passed down, so a frame arriving
+    mid-step is judged against the step the cook is actually on. Imported here
+    to keep the module importable without the MCP server.
+    """
+    try:
+        from .server import _session
+        from .recipes import REGISTRY
+
+        recipe = REGISTRY.get(_session.get("recipe") or "")
+        if recipe is not None:
+            return recipe.step(_session.get("step_index", 0)).goal
+    except Exception:                             # no session, no server, no problem
+        pass
+    return "the pan is ready for the next step"
 
 
 if __name__ == "__main__":  # smallest check that the scenarios do what they claim

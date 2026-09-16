@@ -14,7 +14,9 @@ dependencies = ["mcp>=1.27,<2", "pydantic>=2", "uvicorn>=0.30", "starlette>=0.37
 # The AgentCore layers degrade to local fallbacks when these are absent, which
 # is the supported path on a laptop with no credentials - but they must be
 # installable, or the three-layer contract is only ever one layer deep.
-aws = ["strands-agents", "bedrock-agentcore"]
+# botocore>=1.43 is a hard floor, not a preference: 1.42.9 has no `outputConfig`
+# in its bedrock-runtime model, so structured output fails client-side.
+aws = ["strands-agents", "bedrock-agentcore", "boto3", "botocore>=1.43.0"]
 
 [build-system]
 requires = ["hatchling"]
