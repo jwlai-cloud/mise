@@ -17,6 +17,9 @@ dependencies = ["mcp>=1.27,<2", "pydantic>=2", "uvicorn>=0.30", "starlette>=0.37
 # botocore>=1.43 is a hard floor, not a preference: 1.42.9 has no `outputConfig`
 # in its bedrock-runtime model, so structured output fails client-side.
 aws = ["strands-agents", "bedrock-agentcore", "boto3", "botocore>=1.43.0"]
+# The hot graph. strands-agents runs offline against a scripted model provider,
+# so this is installable and testable with no AWS account at all.
+agents = ["strands-agents>=1.56"]
 
 [build-system]
 requires = ["hatchling"]

@@ -274,9 +274,23 @@ class BedrockVision:
 
 def get_model() -> VisionModel:
     """Pick a backend. Scripted unless a real one is explicitly asked for,
-    because the default has to work on a laptop with no AWS config at all."""
-    if os.getenv("MISE_VISION_BACKEND", "scripted").lower() == "bedrock":
+    because the default has to work on a laptop with no AWS config at all.
+
+      scripted  queued readings; the default, no credentials
+      bedrock   one Converse call per frame
+      graph     the Strands multi-agent hot graph - perception, a conditional
+                critic, a parallel risk node, and a deterministic arbiter
+
+    All three satisfy the same `judge(jpeg, goal) -> Reading` contract, so
+    everything downstream - validation, shutter timestamping, drop-on-failure -
+    is identical and already tested.
+    """
+    backend = os.getenv("MISE_VISION_BACKEND", "scripted").lower()
+    if backend == "bedrock":
         return BedrockVision()
+    if backend == "graph":
+        from .agents import GraphVision          # imported late: pulls in strands
+        return GraphVision()
     return ScriptedVision()
 
 
