@@ -165,4 +165,5 @@ python3 evals/abstention.py             # abstention quality over labelled frame
 | `docs/FRICTION.md` | Friction log — worth up to 10% of the score |
 | `docs/LEARNING.md` | Tech breakdown with primary sources |
 
-Licensed Apache-2.0.
+Copyright 2026 Junwei Lai. Licensed under the Apache License, Version 2.0 — see
+[`LICENSE`](LICENSE).
