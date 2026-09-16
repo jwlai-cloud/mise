@@ -3,3 +3,6 @@ __pycache__/
 .mise-memory.json
 .venv/
 frames/
+
+# Playwright raw captures — the committed artefact is docs/demo/*.mp4
+docs/demo/raw/

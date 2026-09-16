@@ -16,14 +16,17 @@
   .fill{height:100%;border-radius:9999px;background:var(--wait);transition:width .6s ease,background .3s}
   .fill.proceed{background:var(--go)}
   .gate{position:absolute;top:-4px;bottom:-4px;width:3px;background:#fff;opacity:.75}
-  .foot{margin-top:auto;display:flex;justify-content:space-between;color:var(--dim);font-size:18px}
+  .foot{margin-top:auto;display:flex;justify-content:space-between;gap:16px;color:var(--dim);font-size:18px}
+  .foot .conf{font-variant-numeric:tabular-nums}
+  /* The number that caused a refusal, shown only when it is the reason. */
+  .foot .conf.low{color:var(--wait)}
   .stale{opacity:.45}
 </style>
 <div class="step" id="step">Mise</div>
 <div class="verdict wait" id="verdict">…</div>
 <div class="reason" id="reason">Waiting for the first frame from the pan.</div>
 <div class="meter"><div class="fill" id="fill" style="width:0%"></div><div class="gate" id="gate" style="left:80%"></div></div>
-<div class="foot"><span id="instruction"></span><span id="eta"></span></div>
+<div class="foot"><span id="instruction"></span><span class="conf" id="conf"></span><span id="eta"></span></div>
 
 <script>
 // Two transports, one panel.
@@ -68,6 +71,12 @@ function render(s) {
   document.getElementById("instruction").textContent = s.instruction || "";
   document.getElementById("eta").textContent =
     s.seconds_remaining ? `~${s.seconds_remaining}s` : "";
+  // Confidence is only worth screen space when it is the thing being judged —
+  // otherwise it is noise competing with the verdict.
+  const floor = s.min_confidence ?? 0.6, conf = document.getElementById("conf");
+  const showConf = v === "refuse" && !s.is_stale;
+  conf.textContent = showConf ? `confidence ${(s.confidence ?? 0).toFixed(2)} / ${floor.toFixed(2)} needed` : "";
+  conf.classList.toggle("low", showConf);
   const fill = document.getElementById("fill");
   fill.style.width = Math.round((s.doneness || 0) * 100) + "%";
   fill.className = "fill" + (v === "proceed" ? " proceed" : "");
@@ -76,8 +85,22 @@ function render(s) {
 }
 
 // The whole point: this keeps running after the voice turn ends.
-let timer = setInterval(async () => render(await fetchState()), 2000);
-fetchState().then(render);
+// A failed poll must never leave a confident verdict frozen on the screen —
+// the panel is the channel that always carries the truth (invariant 4), so a
+// panel that cannot reach the server has to say so rather than keep showing a
+// stale GO.
+let misses = 0;
+async function refresh() {
+  const s = await fetchState();
+  if (s) { misses = 0; render(s); return; }
+  if (++misses >= 2) render({
+    verdict: "refuse",
+    reason: "I've lost contact with the pan.",
+    is_stale: true,
+  });
+}
+let timer = setInterval(refresh, 2000);
+refresh();
 window.addEventListener("message", (e) => {
   if (e.data?.method === "ui/resource-teardown") clearInterval(timer);
 });
