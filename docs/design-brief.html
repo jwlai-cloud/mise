@@ -1,0 +1,877 @@
+<title>Mise Build Brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+
+<style>
+  /* Dark-first: the palette is the product's own panel, seen across a kitchen. */
+  :root {
+    --ground:   #0F1319;
+    --surface:  #161B23;
+    --raised:   #1D242E;
+    --track:    #242B35;
+    --line:     #2B3542;
+    --ink:      #F2F5F9;
+    --ink-soft: #A9B6C6;
+    --ink-dim:  #71808F;
+    --go:       #38B87C;
+    --wait:     #E8B23A;
+    --stop:     #E5484D;
+    --cool:     #5B9BD9;
+    --accent:   var(--wait);
+    --code-bg:  #11161D;
+    --shadow:   0 1px 0 rgba(255,255,255,.04), 0 8px 28px rgba(0,0,0,.45);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --ground:   #F7F5F1;
+      --surface:  #FFFFFF;
+      --raised:   #FBFAF8;
+      --track:    #E8E4DC;
+      --line:     #DCD7CD;
+      --ink:      #191D24;
+      --ink-soft: #4C565F;
+      --ink-dim:  #77828C;
+      --go:       #1D7F50;
+      --wait:     #9A6B05;
+      --stop:     #B4242C;
+      --cool:     #2C6394;
+      --accent:   var(--wait);
+      --code-bg:  #1A2029;
+      --shadow:   0 1px 2px rgba(25,29,36,.06), 0 8px 24px rgba(25,29,36,.08);
+    }
+  }
+  :root[data-theme="light"] {
+    --ground:   #F7F5F1;
+    --surface:  #FFFFFF;
+    --raised:   #FBFAF8;
+    --track:    #E8E4DC;
+    --line:     #DCD7CD;
+    --ink:      #191D24;
+    --ink-soft: #4C565F;
+    --ink-dim:  #77828C;
+    --go:       #1D7F50;
+    --wait:     #9A6B05;
+    --stop:     #B4242C;
+    --cool:     #2C6394;
+    --accent:   var(--wait);
+    --code-bg:  #1A2029;
+    --shadow:   0 1px 2px rgba(25,29,36,.06), 0 8px 24px rgba(25,29,36,.08);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 400 16px/1.62 "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 78rem;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 0 96px;
+  }
+  .col { max-width: 46rem; }
+
+  /* ---------- masthead ---------- */
+  .mast {
+    border-bottom: 1px solid var(--line);
+    padding-block: 56px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .eyebrow {
+    font: 600 11px/1 "IBM Plex Mono", ui-monospace, monospace;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+  }
+  .eyebrow b { color: var(--accent); font-weight: 600; }
+  h1 {
+    font: 800 clamp(2.4rem, 6vw, 4rem)/0.98 "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -.025em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .standfirst {
+    font-size: 1.2rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: 44rem;
+    margin: 0;
+  }
+  .standfirst em { color: var(--ink); font-style: normal; font-weight: 600; }
+
+  /* ---------- verdict strip: the product's own vocabulary ---------- */
+  .verdicts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-block: 8px 0;
+  }
+  .verdicts div {
+    background: var(--surface);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .verdicts span:first-child {
+    font: 700 1.05rem/1 "Bricolage Grotesque", sans-serif;
+    letter-spacing: -.01em;
+  }
+  .verdicts span:last-child {
+    font-size: .8rem;
+    color: var(--ink-dim);
+    line-height: 1.4;
+  }
+  .v-go    span:first-child { color: var(--go); }
+  .v-wait  span:first-child { color: var(--wait); }
+  .v-ref   span:first-child { color: var(--cool); }
+  .v-stop  span:first-child { color: var(--stop); }
+
+  /* ---------- sections ---------- */
+  section { padding-block: 56px 0; scroll-margin-top: 24px; }
+  h2 {
+    font: 700 clamp(1.6rem, 3.4vw, 2.2rem)/1.1 "Bricolage Grotesque", sans-serif;
+    letter-spacing: -.02em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  h3 {
+    font: 600 1.16rem/1.3 "Bricolage Grotesque", sans-serif;
+    letter-spacing: -.01em;
+    margin: 34px 0 8px;
+  }
+  h4 {
+    font: 600 .95rem/1.35 "IBM Plex Sans", sans-serif;
+    margin: 22px 0 6px;
+    color: var(--ink);
+  }
+  .kicker {
+    font: 600 11px/1 "IBM Plex Mono", monospace;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+    display: block;
+  }
+  p { margin: 0 0 14px; }
+  .col p, .col li { color: var(--ink-soft); }
+  .col p strong, .col li strong { color: var(--ink); font-weight: 600; }
+  ul, ol { margin: 0 0 14px; padding-left: 1.15rem; }
+  li { margin-bottom: 7px; }
+  a { color: var(--cool); text-underline-offset: 3px; }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  code {
+    font: 500 .875em/1.4 "IBM Plex Mono", ui-monospace, monospace;
+    background: var(--track);
+    color: var(--ink);
+    padding: .12em .38em;
+    border-radius: 3px;
+    word-break: break-word;
+  }
+  pre {
+    background: var(--code-bg);
+    color: #DCE3EC;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    padding: 16px 18px;
+    overflow-x: auto;
+    margin: 0 0 16px;
+    font: 400 13.5px/1.62 "IBM Plex Mono", ui-monospace, monospace;
+  }
+  pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+  .cmt { color: #6F8098; }
+  .str { color: #9BD1A0; }
+  .kw  { color: #E8B23A; }
+
+  /* ---------- status rails ---------- */
+  .note {
+    border-left: 3px solid var(--line);
+    background: var(--surface);
+    padding: 14px 18px;
+    margin: 0 0 18px;
+    font-size: .95rem;
+    color: var(--ink-soft);
+  }
+  .note strong { color: var(--ink); }
+  .note.ok   { border-left-color: var(--go); }
+  .note.warn { border-left-color: var(--wait); }
+  .note.bad  { border-left-color: var(--stop); }
+
+  .tag {
+    display: inline-block;
+    font: 600 10px/1.7 "IBM Plex Mono", monospace;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 0 7px;
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    vertical-align: 2px;
+  }
+  .t-run  { color: var(--go); }
+  .t-plan { color: var(--wait); }
+  .t-gap  { color: var(--stop); }
+
+  /* ---------- tables ---------- */
+  .scroll { overflow-x: auto; margin: 0 0 18px; border: 1px solid var(--line); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: .9rem; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font: 600 10.5px/1.5 "IBM Plex Mono", monospace;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    white-space: nowrap;
+  }
+  td { color: var(--ink-soft); }
+  td:first-child { color: var(--ink); font-weight: 500; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  td code { font-size: .84em; }
+
+  /* ---------- diagram frames ---------- */
+  .figure { margin: 26px 0 30px; }
+  .figure iframe {
+    width: 100%;
+    height: 640px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    display: block;
+    box-shadow: var(--shadow);
+  }
+  .figcap {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px 18px;
+    padding-top: 10px;
+    font-size: .85rem;
+    color: var(--ink-dim);
+  }
+  .figcap b { color: var(--ink-soft); font-weight: 500; }
+  @media (max-width: 720px) { .figure iframe { height: 460px; } }
+
+  /* ---------- phase list: genuinely ordered, so numbered ---------- */
+  .phases { list-style: none; padding: 0; margin: 0; counter-reset: p; display: flex; flex-direction: column; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .phases li {
+    counter-increment: p;
+    background: var(--surface);
+    padding: 16px 18px 16px 58px;
+    position: relative;
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: .95rem;
+  }
+  .phases li::before {
+    content: counter(p, decimal-leading-zero);
+    position: absolute;
+    left: 18px; top: 16px;
+    font: 600 12px/1.5 "IBM Plex Mono", monospace;
+    color: var(--accent);
+  }
+  .phases b { color: var(--ink); display: block; font-weight: 600; margin-bottom: 3px; font-size: 1rem; }
+  .phases .cost { float: right; font: 500 11px/1.6 "IBM Plex Mono", monospace; color: var(--ink-dim); margin-left: 12px; }
+
+  details {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    margin: 0 0 12px;
+  }
+  summary {
+    cursor: pointer;
+    padding: 13px 16px;
+    font: 600 .95rem/1.3 "IBM Plex Sans", sans-serif;
+    color: var(--ink);
+    list-style-position: inside;
+  }
+  details > :not(summary) { margin-inline: 16px; }
+  details > pre { margin-block: 0 16px; }
+  details > p  { margin-block: 0 12px; font-size: .92rem; }
+
+  hr { border: none; border-top: 1px solid var(--line); margin: 0; }
+
+  .foot {
+    margin-top: 64px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    font-size: .85rem;
+    color: var(--ink-dim);
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+  <header class="mast">
+    <div class="eyebrow">
+      <span>Mise · build brief</span>
+      <span>Alexa+ track</span>
+      <span>Amazon Developer Hackathon 2026</span>
+      <span><b>ship by 23 Oct 12:00 PDT</b></span>
+    </div>
+    <h1>Readiness as a refusable contract</h1>
+    <p class="standfirst">
+      A self-hosted MCP server and a camera watching a pan. The assistant tells the cook to
+      <em>wait</em> — and declines to judge at all when it cannot see properly. The perception is
+      prior art. The contract is the product.
+    </p>
+  </header>
+
+  <div class="verdicts">
+    <div class="v-go"><span>GO</span><span>the gate is met</span></div>
+    <div class="v-wait"><span>NOT YET</span><span>with evidence and an estimate</span></div>
+    <div class="v-ref"><span>CAN'T TELL</span><span>stale or unclear — it will not guess</span></div>
+    <div class="v-stop"><span>OFF THE HEAT</span><span>overrides every other rule</span></div>
+  </div>
+
+  <section class="col">
+    <span class="kicker">Before anything else</span>
+    <h2>What is actually true today</h2>
+    <p>
+      This brief separates what has been executed from what is designed. Every claim below marked
+      <span class="tag t-run">runs</span> was run in this session against the tree at commit
+      <code>3890240</code>.
+    </p>
+
+    <div class="note ok">
+      <strong>Verified by running it.</strong> The MCP server boots, negotiates protocol
+      <code>2025-11-25</code>, and exposes five tools plus <code>ui://mise/panel</code>. The gate,
+      policy and steering tests pass. <code>check_doneness</code> returns in single-digit
+      milliseconds because it reads a dictionary.
+    </div>
+
+    <div class="note bad">
+      <strong>Broken on a clean clone, today.</strong> <code>pyproject.toml</code> pins
+      <code>mcp&gt;=1.27</code>, which now resolves to <b>mcp 2.2.0</b>, where
+      <code>mcp.server.fastmcp</code> no longer exists — <code>FastMCP</code> was renamed
+      <code>MCPServer</code>. The README's own install command fails. The rules require the repo to
+      contain "all source code, assets, and instructions needed to run your project." One-line fix:
+      pin <code>mcp&gt;=1.27,&lt;2</code>.
+    </div>
+
+    <div class="note warn">
+      <strong>Not yet executed.</strong> Neither <code>strands</code> nor
+      <code>bedrock_agentcore</code> is installed or listed as a dependency, so the Strands steering
+      layer and the AgentCore Memory path both silently no-op. <code>vision.py::ingest_frame</code>
+      raises <code>NotImplementedError</code>. Nothing is deployed to AWS.
+    </div>
+  </section>
+
+  <hr style="margin-top:56px">
+
+  <section>
+    <div class="col">
+      <span class="kicker">The load-bearing decision</span>
+      <h2>Two planes, joined by one cache</h2>
+      <p>
+        Alexa+ budgets roughly <strong>500 ms per tool round-trip</strong>. A vision model does not
+        fit in that budget and never will. So the system is split in two, and the split is what makes
+        a genuinely agentic design possible instead of impossible.
+      </p>
+      <p>
+        The <strong>slow plane</strong> is a Strands multi-agent graph running on its own clock at
+        about 0.3 Hz. It reasons, argues with itself, and writes a last-known-good
+        <code>CookState</code>. The <strong>fast plane</strong> is the MCP tool surface: it reads
+        that cache and applies a deterministic threshold. <em>No model is ever called inside a tool.</em>
+      </p>
+      <p>
+        This is why "is the agent real?" has a good answer here. The agent is real and it is
+        complex — it simply does not sit in the request path. Putting it there would not make the
+        product more agentic; it would make it time out.
+      </p>
+    </div>
+
+    <div class="figure">
+      <iframe src="system.html" title="System architecture: two planes joined by one cache" loading="lazy"></iframe>
+      <div class="figcap">
+        <span><b>Figure 1.</b> System architecture — hover any component to trace its relationships.</span>
+        <span><a href="system.html" target="_blank" rel="noopener">Open full size ↗</a></span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="col">
+      <span class="kicker">One round trip, end to end</span>
+      <h2>"Can I add the garlic yet?"</h2>
+      <p>
+        The sequence below is the demo, and it deliberately shows the <strong>refusal</strong> path
+        rather than the happy one. Doneness reads 0.88 against a 0.80 gate — a naive system says GO.
+        But the critic agent has already dissented on a steamed frame and dropped confidence to 0.20,
+        below the step's floor. The verdict is <code>refuse</code>.
+      </p>
+      <p>
+        Note where the clock is spent: the vision work happened minutes of frames ago. The turn
+        itself is four hops and one dictionary read.
+      </p>
+    </div>
+
+    <div class="figure">
+      <iframe src="turn.html" title="Sequence: one voice turn including the refusal path" loading="lazy"></iframe>
+      <div class="figcap">
+        <span><b>Figure 2.</b> The voice turn, the refusal, and the panel that outlives the turn.</span>
+        <span><a href="turn.html" target="_blank" rel="noopener">Open full size ↗</a></span>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="note bad">
+        <strong>A bug this sequence exposes, and it is in the shipped code.</strong>
+        Policy rule 2 suppresses a repeated refusal within 120 s, but the cooldown is keyed on
+        <em>step</em>, not on <em>verdict</em>, and the suppressed string is
+        <code>"Still not yet."</code> — a wait phrasing. So a normal <code>wait</code> at t=0 will
+        silence a genuine <code>refuse</code> at t=30 s and speak a confident readiness claim from a
+        frame the system just decided it could not read. Proven live this session. It is the one
+        defect that defeats the project's own thesis, and it is a five-line fix.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="col">
+      <span class="kicker">Agent topology</span>
+      <h2>Five agents across two Strands graphs</h2>
+      <p>
+        Yes, this is genuinely multi-agent, and yes, there is real agentic reasoning — but only where
+        a separate agent earns its place. The test applied to every node: does it have a
+        <strong>distinct trigger</strong>, a <strong>distinct model tier</strong>, or a
+        <strong>distinct failure domain</strong>? If not, it is a function wearing a costume, and a
+        judge will say so.
+      </p>
+    </div>
+
+    <div class="figure">
+      <iframe src="agents.html" title="Agent topology: hot per-frame graph and cold event-driven graph" loading="lazy"></iframe>
+      <div class="figcap">
+        <span><b>Figure 3.</b> Hot graph runs per frame; cold graph is triggered by the cook.</span>
+        <span><a href="agents.html" target="_blank" rel="noopener">Open full size ↗</a></span>
+      </div>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Node</th><th>Trigger</th><th>Why it is a separate agent</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>PerceptionAgent</td>
+            <td>every frame tick</td>
+            <td>Needs a vision model and structured output. The only node that must call Bedrock every tick.</td>
+            <td><span class="tag t-gap">unbuilt</span></td>
+          </tr>
+          <tr>
+            <td>CriticAgent</td>
+            <td>conditional edge</td>
+            <td><b>The node that earns the multi-agent claim.</b> Traversed only when confidence &lt; 0.75 or doneness is within ±0.1 of the gate — the boundary where a mistake is expensive. Asked "what would make this judgment wrong?"; dissent forces <code>refuse</code>. Cost stays flat because it rarely fires.</td>
+            <td><span class="tag t-gap">unbuilt</span></td>
+          </tr>
+          <tr>
+            <td>RiskAgent</td>
+            <td>every frame tick</td>
+            <td>Separate failure domain. Danger must never be gated on the perception agent's confidence — invariant 3. Runs in parallel, not downstream.</td>
+            <td><span class="tag t-gap">unbuilt</span></td>
+          </tr>
+          <tr>
+            <td>Arbiter</td>
+            <td>join of the three</td>
+            <td><b>Deliberately not an agent.</b> Deterministic merge, single author of the cache, unit-testable with no model in the loop.</td>
+            <td><span class="tag t-gap">unbuilt</span></td>
+          </tr>
+          <tr>
+            <td>CalibrationAgent</td>
+            <td><code>record_correction</code></td>
+            <td><b>Weakest case, stated honestly.</b> Today this is <code>gate ± 0.15</code> in <code>memory.py</code> and a function would do. It becomes an agent only when it reasons over Memory: "is the gate wrong, or was this dish different?"</td>
+            <td><span class="tag t-run">function runs</span></td>
+          </tr>
+          <tr>
+            <td>ChoreographyAgent</td>
+            <td><code>start_service</code></td>
+            <td>The only node that genuinely <em>plans</em>: backward-schedule two pans to land together, re-plan when one stalls.</td>
+            <td><span class="tag t-gap">unbuilt</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col">
+      <h3>The graph, in Strands</h3>
+      <p>
+        <code>GraphBuilder</code> gives deterministic execution order with conditional edge traversal —
+        which is exactly what the critic needs, and why a Graph beats a Swarm here. Autonomous handoff
+        would make cost and latency unpredictable on a loop that runs every three seconds.
+      </p>
+<pre><code><span class="cmt"># src/mise/agents/hot.py — the per-frame graph</span>
+<span class="kw">from</span> strands <span class="kw">import</span> Agent
+<span class="kw">from</span> strands.multiagent <span class="kw">import</span> GraphBuilder
+
+perception = Agent(name=<span class="str">"perception"</span>, model=<span class="str">"au.anthropic.claude-haiku-4-5"</span>, ...)
+critic     = Agent(name=<span class="str">"critic"</span>,     model=<span class="str">"au.anthropic.claude-haiku-4-5"</span>, ...)
+risk       = Agent(name=<span class="str">"risk"</span>,       model=<span class="str">"au.anthropic.claude-haiku-4-5"</span>, ...)
+
+<span class="kw">def</span> near_the_gate(state) -> bool:
+    <span class="cmt">"""Only pay for a critic where a mistake is expensive."""</span>
+    r = state.results[<span class="str">"perceive"</span>].result
+    <span class="kw">return</span> r.confidence &lt; <span class="str">0.75</span> <span class="kw">or</span> abs(r.doneness - r.gate) &lt; <span class="str">0.1</span>
+
+b = GraphBuilder()
+b.add_node(perception, <span class="str">"perceive"</span>)
+b.add_node(critic,     <span class="str">"critique"</span>)
+b.add_node(risk,       <span class="str">"risk"</span>)
+b.add_node(arbiter,    <span class="str">"arbitrate"</span>)        <span class="cmt"># custom node, no model</span>
+b.add_edge(<span class="str">"perceive"</span>, <span class="str">"critique"</span>, condition=near_the_gate)
+b.add_edge(<span class="str">"perceive"</span>, <span class="str">"risk"</span>)
+b.add_edge(<span class="str">"perceive"</span>, <span class="str">"arbitrate"</span>)
+b.add_edge(<span class="str">"critique"</span>, <span class="str">"arbitrate"</span>)
+b.add_edge(<span class="str">"risk"</span>,     <span class="str">"arbitrate"</span>)
+b.set_entry_point(<span class="str">"perceive"</span>)
+b.set_execution_timeout(<span class="str">20</span>)              <span class="cmt"># drop the tick, never queue it</span>
+HOT = b.build()</code></pre>
+      <div class="note warn">
+        <strong>Verify before building.</strong> <code>GraphBuilder</code>, <code>add_node</code>,
+        <code>add_edge</code>, <code>set_entry_point</code> and <code>set_execution_timeout</code> are
+        confirmed in the Strands docs, as is conditional edge traversal. The exact
+        <code>condition=</code> signature and the shape of <code>state.results</code> were not
+        verified in this session — check them against the installed version first.
+      </div>
+    </div>
+  </section>
+
+  <hr style="margin-top:56px">
+
+  <section>
+    <div class="col">
+      <span class="kicker">The mini challenge that pays $5,000 + $5,000</span>
+      <h2>AgentCore, service by service</h2>
+      <p>
+        The AWS Builder rule asks for <em>documented</em> integrations. That means each service must
+        be named with a reason: <strong>what primitive, and why that primitive rather than a simpler
+        one.</strong> Six services carry real weight here. The seventh is named and declined, on
+        purpose — volunteering what you did not need reads as judgement, not as a gap.
+      </p>
+    </div>
+
+    <div class="col">
+      <h3>Runtime — two deployments, not one</h3>
+      <p>
+        Runtime hosts MCP servers natively. The service expects the container at
+        <code>0.0.0.0:8000/mcp</code>, which is the default path for the official SDKs, and it
+        <strong>adds an <code>Mcp-Session-Id</code> header automatically</strong> to any request that
+        lacks one, so clients keep continuity to the same runtime session. Stateless mode
+        (<code>stateless_http=True</code>) is the recommended default.
+      </p>
+      <p>
+        <code>src/mise/server.py</code> already matches this contract exactly —
+        <code>FastMCP(..., stateless_http=True, json_response=True)</code>. That is a genuine piece of
+        luck worth keeping: the existing server is already Runtime-shaped.
+      </p>
+<pre><code><span class="cmt"># Deployment A — the MCP server (the fast plane)</span>
+npm install -g @aws/agentcore
+
+agentcore create --project-name mise --no-agent
+agentcore add agent \
+  --name MiseMCP \
+  --language Python \
+  --protocol MCP \
+  --authorizer-type CUSTOM_JWT \
+  --discovery-url <span class="str">"https://cognito-idp.ap-southeast-2.amazonaws.com/$POOL_ID/.well-known/openid-configuration"</span> \
+  --allowed-clients <span class="str">"$CLIENT_ID"</span> \
+  --request-header-allowlist Authorization
+agentcore deploy
+
+<span class="cmt"># -> arn:aws:bedrock-agentcore:ap-southeast-2:ACCT:runtime/MiseMCP-xxxxxx</span></code></pre>
+      <p>
+        The <strong>second</strong> deployment is the agent graph, on the same Runtime but with the
+        default protocol rather than MCP. It is a long-running loop, not a request handler, and it
+        writes to the shared cache. Keeping them as separate runtimes is the whole architecture
+        expressed in deployment: the slow plane can crash and restart without taking the voice path
+        with it.
+      </p>
+      <div class="note warn">
+        <strong>Decide early: where does the cache live?</strong> Today <code>state.STORE</code> is an
+        in-process dict, which only works while both planes share a process. Two Runtimes means two
+        processes. Either co-locate them in one container for the demo (simplest, and honest), or move
+        the cache to a small store. Do not discover this on demo night.
+      </div>
+
+      <h3>Memory — the half nobody else does</h3>
+      <p>
+        Samsung and GE calibrate to the appliance they sold you. Nothing calibrates to
+        <em>your</em> burner, <em>your</em> pan, and what <em>you</em> mean by translucent. The
+        long-term <code>userPreferenceMemoryStrategy</code> is exactly the right primitive: it is
+        durable across sessions, namespaced per actor, and the demo moment is a visible behaviour
+        change between session 1 and session 3.
+      </p>
+<pre><code><span class="kw">from</span> bedrock_agentcore.memory <span class="kw">import</span> MemoryClient
+
+client = MemoryClient(region_name=<span class="str">"ap-southeast-2"</span>)
+mem = client.create_or_get_memory(
+    name=<span class="str">"mise-cook-calibration"</span>,
+    strategies=[{<span class="str">"userPreferenceMemoryStrategy"</span>: {
+        <span class="str">"name"</span>: <span class="str">"doneness-preferences"</span>,
+        <span class="str">"namespaces"</span>: [<span class="str">"cook/{actorId}/hob/"</span>],   <span class="cmt"># trailing slash REQUIRED</span>
+    }}],
+)</code></pre>
+      <ul>
+        <li><strong>Namespaces must end in a trailing slash</strong> — otherwise multi-tenant prefixes collide.</li>
+        <li><strong>Watch the size limits.</strong> <code>IngestData</code> writes arbitrary JSON straight to long-term memory but caps at <b>100 KB per item and per request</b>. <code>CreateEvent</code> allows 10 MB. Frames go nowhere near either.</li>
+        <li>Keep the local JSON fallback. The project must still run on a laptop with no credentials — check <code>CALIBRATION.backend</code> to see which path is live.</li>
+      </ul>
+
+      <h3>Policy — Dogwood is the reason the gate is a contract</h3>
+      <p>
+        Dogwood is a strict superset of Cedar that adds <code>formerly within</code>,
+        <code>since within</code>, <code>count</code> and <code>sum</code>. That matters because it
+        lets a decision condition on <strong>what the agent has already done in this session</strong>,
+        scoped by the <code>x-amzn-bedrock-agentcore-policy-session-id</code> header. A model cannot
+        talk its way past a policy that reasons over its own action history.
+      </p>
+<pre><code><span class="cmt">// 1. Advancing requires a passing gate OBSERVED in the last 20 seconds —</span>
+<span class="cmt">//    not "the model believes it is ready".</span>
+permit (principal, action == Action::<span class="str">"advance_step"</span>, resource)
+when { context.gate_passed formerly within 20 seconds };
+
+<span class="cmt">// 2. Alarm fatigue. A coach that repeats itself gets muted,</span>
+<span class="cmt">//    and a muted coach cannot warn you when it matters.</span>
+forbid (principal, action == Action::<span class="str">"speak_refusal"</span>, resource)
+when { count(context.refusals_for_step) &gt;= 1 since within 120 seconds };
+
+<span class="cmt">// 3. Danger is never rate-limited and never confidence-gated.</span>
+permit (principal, action == Action::<span class="str">"speak_abort"</span>, resource);
+
+<span class="cmt">// 4. Three corrections on one step means the threshold is wrong,</span>
+<span class="cmt">//    not the cook. Stop gating and hand control back.</span>
+forbid (principal, action == Action::<span class="str">"block_advance"</span>, resource)
+when { count(context.corrections_for_step) &gt;= 3 since within 3600 seconds };</code></pre>
+      <div class="note warn">
+        <strong>Claim this carefully until it is deployed.</strong> <code>policies/mise.dogwood</code>
+        has never been evaluated by AgentCore Policy in this project; <code>policy.py</code> mirrors
+        the semantics locally. Until the ARN exists, describe it as "the policy expressed in Dogwood,
+        evaluated locally" — that sentence costs nothing and removes the single most likely
+        interrogation question.
+      </div>
+
+      <h3>Identity, Observability, Evaluations</h3>
+      <ul>
+        <li><strong>Identity</strong> — inbound OAuth on the Runtime (Cognito user pool, <code>CUSTOM_JWT</code>). It also supplies the stable <code>actorId</code> that Memory's namespace is keyed on, so it is load-bearing rather than ceremonial. Note: missing auth returns <code>401</code> with a <code>WWW-Authenticate</code> header pointing at the protected-resource metadata.</li>
+        <li><strong>Observability</strong> — traces every node in the hot graph. This is the cheapest judge-visible evidence in the whole build: a trace waterfall showing the critic firing on 1 tick in 12 <em>proves</em> the conditional edge is real rather than decorative.</li>
+        <li><strong>Evaluations</strong> — where <code>evals/abstention.py</code> lands as a custom evaluator, scored over recorded pan footage.</li>
+      </ul>
+
+      <h3>Gateway — named and declined</h3>
+      <p>
+        Gateway federates external APIs into MCP tools. Mise has no external API to federate: the
+        recipes are local and the camera is local. Forcing it in would add a hop and a dependency for
+        a line on a slide. <strong>Say this out loud in the submission.</strong>
+      </p>
+
+      <h3>Bedrock and the region choice</h3>
+      <p>
+        Deploy in <strong>ap-southeast-2</strong>, where AgentCore is GA for Runtime, Memory, Gateway,
+        Identity, Policy, Evaluations and Observability. Sydney has no <code>apac.</code> Anthropic
+        profile, so the real choice is:
+      </p>
+      <ul>
+        <li><code>au.*</code> — cross-region Sydney↔Melbourne, <strong>data residency</strong>, 4.5-generation models.</li>
+        <li><code>global.*</code> — frontier models, <strong>no residency guarantee</strong>.</li>
+      </ul>
+      <p>
+        Take <code>au.*</code>. For a device with a camera in someone's kitchen, "the frames never
+        leave Australia" is a product decision with a reason, and it scores under Design and Potential
+        Impact rather than just Tech. It is also a real trade — say which models you gave up.
+      </p>
+    </div>
+  </section>
+
+  <hr style="margin-top:56px">
+
+  <section>
+    <div class="col">
+      <span class="kicker">The required technology</span>
+      <h2>Which MCP gets built, and which gets used</h2>
+      <p>
+        Worth being precise, because the track rule is specific: <em>"Build a working Agent Skill or a
+        self-hosted MCP server, implementing MCP spec version (minimum acceptable version is
+        2025-11-25)."</em>
+      </p>
+      <div class="note ok">
+        <strong>This requirement is already met and I verified it.</strong> With <code>mcp</code> 1.30
+        the server answers <code>initialize</code> with
+        <code>"protocolVersion":"2025-11-25"</code>. Note that the SDK's
+        <code>DEFAULT_NEGOTIATED_VERSION</code> is <code>2025-03-26</code> — the higher version is
+        reached by negotiation, so keep a screenshot of the handshake.
+      </div>
+    </div>
+
+    <h3 class="col" style="margin-bottom:14px">Built — one server, six tools</h3>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Tool</th><th>Visibility</th><th>Role</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><code>start_service</code></td><td>model</td><td>Begin one dish or several. Supersedes <code>start_recipe</code> when choreography lands.</td><td><span class="tag t-run">runs</span></td></tr>
+          <tr><td><code>check_doneness</code></td><td>model</td><td>The primary tool. Applies the cook's calibrated gate, feeds the policy ledger, returns one of four verdicts.</td><td><span class="tag t-run">runs</span></td></tr>
+          <tr><td><code>advance_step</code></td><td>model</td><td>Guarded by <code>guarded_advance()</code> and by Strands steering. Cannot execute on a stale observation.</td><td><span class="tag t-run">runs</span></td></tr>
+          <tr><td><code>record_correction</code></td><td>model</td><td>"too_early" / "too_late" moves the threshold through Memory, bounded and reversible.</td><td><span class="tag t-run">runs</span></td></tr>
+          <tr><td><code>whats_next</code></td><td>model</td><td>The choreography read across all pans — one answer for "what do I do right now".</td><td><span class="tag t-plan">planned</span></td></tr>
+          <tr><td><code>panel_state</code></td><td><b>app only</b></td><td>Polled by the panel every 2 s. Invisible to the model — this is what keeps the screen alive after the voice turn ends.</td><td><span class="tag t-run">runs</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col">
+      <p>
+        Resource: <code>ui://mise/panel</code>, mime <code>text/html;profile=mcp-app</code>, linked
+        from each tool through <code>_meta.ui.resourceUri</code>.
+      </p>
+      <div class="note ok">
+        <strong>This is the most creative use of the required tool in the project, and it is
+        currently buried in a learning note.</strong> The rubric's Quality of the Idea criterion asks
+        whether this is "a creative, imaginative use of the required tools" — the <em>tools</em>, not
+        the domain. Alexa+ is turn-based and cannot interrupt the cook. A tool marked
+        <code>_meta.ui.visibility: ["app"]</code> plus a <code>setInterval</code> defeats that: the
+        panel keeps polling and rendering after the voice turn is over. Lead with this.
+      </div>
+
+      <h3>Used — Amazon's own MCP server</h3>
+      <p>
+        There is no Alexa-provided MCP server to consume; Alexa+ is the host, not a server. But the
+        resources page ships <strong>Amazon Devices Builder Tools</strong>, an MCP server for AI coding
+        assistants offering documentation search and guided workflows. Wire it into this session's
+        coding assistant and use it. Two reasons, both worth points: it is a tool "used in your
+        project," which the <em>mandatory</em> product-feedback requirement then covers, and it will
+        generate friction-log entries on contact.
+      </p>
+      <div class="note warn">
+        <strong>Two feedback artefacts, not one.</strong> <code>docs/FRICTION.md</code> is the
+        <em>optional</em> friction log worth up to a 10% bonus. Separately, the rules make
+        <strong>Product Feedback mandatory</strong> for each tool, API or SDK used, answering five
+        named questions: what you used it for, what worked well, what needs work, how onboarding
+        felt, and whether you would build with it again. That artefact does not exist yet. Also note
+        four of the six banked friction entries are about Ring and Vega — tracks not used here. They
+        are legitimate friction, but they do not discharge the mandatory requirement.
+      </div>
+    </div>
+  </section>
+
+  <hr style="margin-top:56px">
+
+  <section>
+    <div class="col">
+      <span class="kicker">Sequenced, because the order is load-bearing</span>
+      <h2>Build order</h2>
+      <p>
+        Roughly 37 days, solo, evenings — call it 85 to 100 usable hours with 12 reserved for the
+        video and the writeup. The ordering is not preference. Phase 01 comes first because
+        <strong>the differentiating verdict has never once appeared on screen</strong>, and without it
+        there is no demo to shoot no matter how the rest goes.
+      </p>
+    </div>
+
+    <ol class="phases">
+      <li><span class="cost">~2 h</span><b>Make <code>refuse</code> and <code>abort</code> reachable</b>
+        The simulator hardcodes <code>confidence=0.88</code>, <code>risk="none"</code> and writes every second, so neither verdict can occur and the pan pins at doneness 1.0 forty-five seconds after boot. Replace it with a scriptable frame sequence that steams the lens, goes silent, and catches. This unblocks the video whether or not the vision model lands.</li>
+      <li><span class="cost">~30 min</span><b>Fix the refusal flattening</b>
+        Exempt <code>refuse</code> from the rule-2 cooldown, or at minimum change the suppressed string to <code>"I still can't tell."</code></li>
+      <li><span class="cost">~20 min</span><b>Pin <code>mcp&lt;2</code>, push the repo public</b>
+        Both are hard rules requirements. There is currently no git remote at all.</li>
+      <li><span class="cost">~1 h</span><b>Correct the docs that overstate</b>
+        PROGRESS.md claims end-to-end verification of a server whose dependency does not install. Add <code>strands-agents</code> and <code>bedrock-agentcore</code> as extras, or drop the three-layer claim from the README table.</li>
+      <li><span class="cost">3 evenings, hard cap</span><b>The vision spike</b>
+        Three real cooks, a frame every 3 s, hand-labelled. Pass is monotonic and within ±0.15. If it wobbles, narrow to one dish and a fixed camera <em>that night</em> rather than spending a second week.</li>
+      <li><span class="cost">~3 h</span><b>Re-label the abstention eval</b>
+        Add an independent <code>label_doneness</code> so the counterfactual stops being computed from the very number the system declared untrustworthy. Lead with <b>risk 0% at 70% coverage</b>, not the 33%.</li>
+      <li><span class="cost">~6 h</span><b>Deploy AgentCore Memory for real</b>
+        One service actually deployed beats six planned. Film the session-1-vs-session-3 behaviour change.</li>
+      <li><span class="cost">~6 h</span><b>The hot graph</b>
+        Perception, critic, risk, arbiter. Turn on Observability and keep the trace waterfall — it is the proof the critic is conditional.</li>
+      <li><span class="cost">~12 h</span><b>Video and submission</b>
+        Under three minutes, public on YouTube or Vimeo, showing the MCP server in action.</li>
+    </ol>
+
+    <div class="col">
+      <h3>Cut, and say so in "What's next"</h3>
+      <ul>
+        <li><strong>Multi-dish choreography.</strong> The strongest remaining differentiator and the weakest build: it needs per-dish state through <code>state.py</code>, <code>server.py</code>, <code>policy.py</code> and the panel, plus a perception layer that can attribute state to two pans. That is a refactor of everything, in the weeks reserved for the demo. Pitch it; do not claim it.</li>
+        <li><strong>Two of the three enforcement layers, as claims.</strong> Keep all three in code. Describe deployed reality.</li>
+        <li><strong>The project rename.</strong> "Not Yet" is the better name. It is not worth the churn now.</li>
+      </ul>
+      <div class="note ok">
+        <strong>Reversing one earlier cut.</strong> The Open Source mini challenge is worth $5,000 cash plus $5,000 in credits and the rule is softer than assumed: <em>"Create a new, additional open-source project or contribute to an existing public repository during the hackathon window, alongside a primary track submission."</em> A contribution qualifies — it does not have to be a whole extracted library. One small upstream PR against the MCP Python SDK or the AgentCore samples, filed from friction you hit anyway, is an hour or two. Keep it.
+      </div>
+    </div>
+  </section>
+
+  <hr style="margin-top:56px">
+
+  <section>
+    <div class="col">
+      <span class="kicker">Four criteria, equally weighted</span>
+      <h2>How this scores</h2>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Criterion</th><th>The actual wording</th><th>Where it stands</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Tech Implementation</td>
+            <td>"How well is the project built, and how effectively does it use the required tech?"</td>
+            <td><b>Required tech is already satisfied</b> — spec 2025-11-25 over streamable HTTP, verified. "How well is it built" is the weak half: install broken, perception unimplemented, nothing deployed. Phases 01–08 fix exactly this.</td>
+          </tr>
+          <tr>
+            <td>Design</td>
+            <td>"Does the project deliver a <b>complete</b>, coherent product experience?"</td>
+            <td>"Complete" is the operative word and four verdicts where two are unreachable is not complete. Note that design here is also the <em>voice</em>: <code>Decision.spoken()</code> is a spoken-language spec under a 30 s budget with a deliberate refusal register. Write that up; it is a real design artefact.</td>
+          </tr>
+          <tr>
+            <td>Potential Impact</td>
+            <td>"Does the project make a credible, <b>specific</b> case for solving customer needs?"</td>
+            <td>Thinnest, and no impact sentence is written down anywhere yet. Health and safety claims are barred. The candidate that survives: <b>accessibility</b> — a cook who cannot reliably judge a pan gets a second opinion that admits when it does not know. Decide before filming.</td>
+          </tr>
+          <tr>
+            <td>Quality of the Idea</td>
+            <td>"Is this a creative, imaginative use of the <b>required tools</b>?"</td>
+            <td><b>Strongest.</b> But note it rewards creative use of <em>MCP</em>, not of the cooking domain. So the headline is the app-visibility panel that defeats turn-based voice, with ADR-0002's open naming of Fullerton, CamCook, GE and Samsung right behind it — volunteering the prior art is what scores.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="col">
+    <span class="kicker">The one sentence</span>
+    <h2>What to say when a judge has thirty seconds</h2>
+    <p style="font-size:1.24rem;line-height:1.5;color:var(--ink);border-left:3px solid var(--accent);padding-left:18px;margin-block:18px 22px">
+      Every recipe app pushes you forward. This one can refuse — and advancement is gated on a recent
+      <em>observation</em>, not on the model's belief.
+    </p>
+    <p>
+      That second clause is the part a prompted vision loop cannot claim. A prompted loop has a
+      conversation; it has no notion of observation recency. <code>policy.py::may_advance</code> is
+      twelve lines, it runs today, and it survives a skeptic. Lead with it rather than with "enforced
+      in three places," which invites the question of how many of the three are deployed.
+    </p>
+    <div class="note bad">
+      <strong>The single biggest risk is not the vision model.</strong> It is spending three weeks
+      deepening a scaffold whose differentiating verdict has never appeared on screen, then finding in
+      week five that there is no footage of the thing being pitched. Phase 01 is two hours. Do it first.
+    </div>
+  </section>
+
+  <p class="foot">
+    Mise · build brief for the Alexa+ track, Build Ship Shape: Amazon Developer Hackathon.
+    Written against commit <code>3890240</code> on branch <code>dev</code>, 16 September 2026.
+    Diagrams are interactive — hover to trace, and use the view chapters in each figure.
+    Claims marked <span class="tag t-run">runs</span> were executed; everything else is design.
+  </p>
+</div>

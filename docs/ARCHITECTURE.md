@@ -1,7 +1,7 @@
 # Architecture — current state
 
 Snapshot of what exists now. Replace, don't append.
-Last updated 2026-09-15.
+Last updated 2026-09-16.
 
 ## System
 
@@ -25,11 +25,13 @@ Last updated 2026-09-15.
 | Gate | `src/mise/gate.py` | Deterministic decision → `proceed` / `wait` / `refuse` / `abort`. No model involved. |
 | MCP server | `src/mise/server.py` | FastMCP, streamable HTTP, stateless, JSON responses. Five tools + the `ui://` resource. |
 | Panel | `ui/panel.html` | Dual transport: JSON-RPC over `postMessage` in an MCP host, plain fetch in a browser. |
-| Vision loop | `src/mise/vision.py` | `SimulatedSource` today. `ingest_frame()` is the one unimplemented function. |
+| Vision loop | `src/mise/vision.py` | `ScenarioSource` today: scripted keyframes that reach all four verdicts with no model. `ingest_frame()` is the one unimplemented function. |
 | Memory | `src/mise/memory.py` | AgentCore Memory (user-preference strategy, namespace `cook/{actorId}/hob/`). Local JSON fallback. |
 | Policy | `src/mise/policy.py` | Local mirror of the four Dogwood rules; session ledger of gate observations, refusals, corrections. |
 | Steering | `src/mise/steering.py` | Strands `BeforeToolCallEvent` handler guarding `advance_step`. |
-| ASGI app | `src/mise/app.py` | `/mcp` + `/dev/state` + `/dev/panel` + `/dev/start`. |
+| ASGI app | `src/mise/app.py` | `/mcp`, `/ingest`, and the demo rig: `/dev/{state,start,scenario,scenarios,reset,panel,control,camera}`. |
+| Demo remote | `ui/control.html` | One button per verdict. Arms a scenario and puts the recipe on the step it is written for. |
+| Phone camera | `ui/camera.html` | `getUserMedia` → canvas → JPEG → `POST /ingest` at ~0.3 Hz. No inference on device. |
 
 ## MCP surface
 
@@ -53,5 +55,11 @@ Resource: `ui://mise/panel`, mime `text/html;profile=mcp-app`.
 
 - **Alexa+ tool round-trip ≈ 500ms.** No model call inside a tool, ever.
 - **Alexa+ is turn-based.** No proactive push, no long-running tools. Voice cannot interrupt; the panel can.
+- **A frame's timestamp is when it was taken, not when it was stored.** `STORE.write()`
+  takes `updated_at` so `is_stale` measures the age of the *view*. Stamping the write
+  would make a 2-3s vision call look like 2-3s of freshness it never had.
+- **Camera frames need a secure context.** `getUserMedia` refuses a LAN address
+  outright, so local development runs behind a tunnel; AgentCore Runtime provides
+  HTTPS in deployment and the code path is identical.
 - **Echo Show will not give a third-party server camera frames.** Alexa's only camera-facing developer API is the Object Detection Sensor API (person/pet/package/vehicle). Own camera required.
 - **MCP Toolkit publish path is US-only private preview.** Build and demo are unaffected; see ADR-0001.
