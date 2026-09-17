@@ -23,6 +23,11 @@ So the timer is a guess dressed as an instruction, and the cook — who can see 
 well that the onions are still firm — is the one who has to overrule it. That is exactly
 backwards. The thing with the camera should be the thing that says *not yet*.
 
+And the person this hurts most is specific: **someone cooking a dish they have not made
+before.** They are not short of instructions — they are short of *judgement*, and judgement
+is the only part a recipe cannot hand over. "Until translucent" assumes you already know what
+translucent looks like. If you did, you would not be reading the recipe.
+
 The second half of the idea came from the failure case rather than the happy one. A
 kitchen is a bad place to see: steam crosses the lens, a hand reaches in, a lid goes on.
 Every shipping product we found handles this by answering anyway. Samsung's own footnote
@@ -193,6 +198,12 @@ specifically so the first one can never come back.
   `confidence 0.22 / 0.60 needed` underneath. A judge gets it without narration.
 - **[SPIKE]** perception accuracy against hand-labelled frames — target: monotonic and
   within ±0.15, with confidence dropping when the view is blocked.
+
+**What we deliberately did not build**, so that cut-by-choice reads differently from
+didn't-finish: this is not a safety device and makes no health claims; it is not a recipe
+database (seven MCP servers already are); it never touches the hob; and multi-dish
+choreography — the strongest remaining differentiator, which nothing on the market does — was
+cut on time rather than on merit. `docs/PRODUCT.md` records each with its reason.
 
 ## What we learned
 

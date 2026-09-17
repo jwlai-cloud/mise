@@ -1,6 +1,13 @@
 # 0001 — Track choice and core architecture
 
 Status: accepted · 2026-09-15 · Deadline 2026-10-23
+**Partly superseded: the region choice below is amended by [ADR-0004](0004-develop-in-us-decide-residency-after-the-spike.md).**
+The track choice and the architecture stand. The decision to deploy to
+ap-southeast-2 on `au.` profiles is deferred until the week-one spike has
+numbers - AgentCore is GA in the US regions too, so Sydney was never
+distinguished by that, and `au.` costs frontier model capability on the one
+component that is entirely unvalidated. Read 0004 before acting on the
+*AWS integration* section.
 
 ## Context
 

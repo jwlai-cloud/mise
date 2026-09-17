@@ -4,6 +4,8 @@ Hackathon entry for **Build, Ship, Shape: Amazon Developer Hackathon**, Alexa+ t
 Deadline **2026-10-23 12:00 PDT**. Solo build, evenings, from Perth (UTC+8).
 
 **Read `docs/PROGRESS.md` before doing anything.** It is the resume point.
+`docs/PRODUCT.md` is the other half: the problem, the persona, the edge over prior art,
+and the non-goals. Check a new feature against its non-goals before building it.
 
 ## What this is, in one sentence
 

@@ -244,6 +244,7 @@ python3 evals/abstention.py             # abstention quality over labelled frame
 | File | What it is |
 |---|---|
 | `CLAUDE.md` | Standing context and invariants for coding sessions |
+| `docs/PRODUCT.md` | The problem, who it's for, the edge over prior art, and the non-goals |
 | `docs/PROGRESS.md` | **Read first.** State, next actions, open questions |
 | `docs/ARCHITECTURE.md` | Current-state system snapshot |
 | `docs/adr/` | Decisions, immutable once accepted |
