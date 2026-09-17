@@ -29,6 +29,20 @@ data rather than by feel. Keep every JPEG — it is also the corpus for AgentCor
 Evaluations, and ~100 labelled frames is where the percentages stop being a
 smoke test.
 
+**Every threshold in the system is an unmeasured guess, and this spike is the only thing
+that turns them into numbers:**
+
+| knob | where | now | why it is a guess |
+|---|---|---|---|
+| confidence floor | `recipes.py` | 0.60 | sits inside the safe plateau on ten synthetic rows |
+| view ceilings | `perception.py` | steam 0.35, lid 0.20, glare 0.45 | set against the 0.6 floor, never measured |
+| critic trigger | `agents.py` | conf < 0.75, or ±0.1 of the gate | picked so the critic is affordable, not so it is right |
+| staleness | `state.py` | 15 s | a round number |
+
+The ceilings and the critic trigger can only be moved by the **degraded** frames — steam, a
+hand, a knocked phone. A corpus of clean frames cannot touch either, which is why shooting
+them is a pass criterion rather than a nice-to-have.
+
 ### 2. Does the panel render in the Local Inspector?
 `npx addon-local-inspector <url>` against `ui://mise/panel`. Confirm it renders in both
 device frames, that the 2s poll of `panel_state` works inside the sandbox, and whether

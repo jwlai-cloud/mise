@@ -153,7 +153,7 @@
       "id": "mcpserver",
       "type": "backend",
       "label": "Mise MCP Server",
-      "sublabel": "FastMCP :8000/mcp",
+      "sublabel": "MCPServer :8000/mcp",
       "pos": [
         520,
         540

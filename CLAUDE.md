@@ -57,7 +57,7 @@ decline to judge at all when it can't see properly.
 ## Run and test
 
 ```bash
-pip install -e .          # mcp is capped <2 on purpose; 2.x removed FastMCP
+pip install -e .          # mcp 2.1.x; the <2.2 ceiling comes from strands-agents 1.56
 PYTHONPATH=src uvicorn mise.app:app --port 8000
 # MCP:     http://localhost:8000/mcp
 # panel:   http://localhost:8000/dev/panel
@@ -89,8 +89,9 @@ python3 evals/abstention.py
   is unsubmitted (surfaces as `ResourceNotFoundException`, not an auth error), and the
   account has no `bedrock-agentcore:*` and no Sydney Bedrock permissions. Policies are
   written and ready in `infra/`; attaching them needs an admin principal.
-- `mcp` 1.27 `FastMCP` API: `@mcp.tool(meta=...)`, `@mcp.resource(uri, mime_type=...)`,
-  `mcp.streamable_http_app()`. `meta` populates `_meta`, which is how MCP Apps links
+- `mcp` 2.1 `MCPServer` API: `@mcp.tool(meta=...)`, `@mcp.resource(uri, mime_type=...)`,
+  `mcp.streamable_http_app(stateless_http=True, json_response=True, host="0.0.0.0")`.
+  `FastMCP` is the 1.x name and does not exist in 2.x. `meta` populates `_meta`, which is how MCP Apps links
   a tool to its `ui://` panel.
 - Both mini challenges are in scope: **AWS Builder** (needs *documented* integrations
   — ARCHITECTURE.md must name each service and why that primitive) and **Open Source**

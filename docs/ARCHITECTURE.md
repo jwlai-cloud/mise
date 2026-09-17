@@ -30,7 +30,7 @@ Last updated 2026-09-16 (session 2, after the hot graph).
 | State cache | `src/mise/state.py` | Thread-safe last-known-good `CookState`. The boundary between the slow world (vision) and the fast world (tools). Exposes `is_stale`. |
 | Recipes | `src/mise/recipes.py` | A recipe is a list of **gates**, not steps. Each step declares `gate_doneness`, `min_confidence`, `typical_seconds`. |
 | Gate | `src/mise/gate.py` | Deterministic decision → `proceed` / `wait` / `refuse` / `abort`. No model involved. |
-| MCP server | `src/mise/server.py` | FastMCP, streamable HTTP, stateless, JSON responses. Five tools + the `ui://` resource. |
+| MCP server | `src/mise/server.py` | `MCPServer` (mcp 2.1), streamable HTTP, stateless, JSON responses. Five tools + the `ui://` resource. Tool bodies are serialized under one lock: 2.x runs sync handlers on worker threads. |
 | Panel | `ui/panel.html` | Dual transport: JSON-RPC over `postMessage` in an MCP host, plain fetch in a browser. |
 | Vision loop | `src/mise/vision.py` | `ScenarioSource` (scripted keyframes, all four verdicts, no model) and `ingest_frame()` (real frames). Exactly one of them owns `STORE` at a time. |
 | Hot graph | `src/mise/agents.py` | The Strands multi-agent loop: perception, a conditional critic that may only lower confidence, a parallel risk node, and a deterministic arbiter that is the single writer. Runs offline against `ScriptedModel`. Emits the `mise.frame` span. See ADR-0005. |
@@ -57,7 +57,11 @@ Resource: `ui://mise/panel`, mime `text/html;profile=mcp-app`.
 ## Deployment (planned, not yet done)
 
 - Region **ap-southeast-2**. AgentCore GA there for Runtime, Memory, Gateway, Identity, Policy, Evaluations, Observability.
-- Bedrock models: **`au.` cross-region profiles** (Sydney↔Melbourne, data residency, 4.5-generation). `global.*` would give frontier models but no residency guarantee — residency was chosen deliberately and is part of the pitch.
+- Bedrock models: **deferred, see ADR-0004.** `au.` cross-region profiles give Sydney↔Melbourne
+  residency on 4.5-generation models; `global.*`/`us.*` give frontier models without it. Residency
+  is a good consumer argument for a kitchen camera and worth keeping **if the spike's numbers earn
+  it** — it is not worth spending model capability on the one component that is unvalidated.
+  Develop in the US, decide after the spike. Region is `AWS_REGION`, not architecture.
 - Runtime hosts the MCP server; Gateway not yet needed (no external APIs to federate).
 
 ## Constraints that shaped this

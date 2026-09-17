@@ -61,9 +61,9 @@ account-level Bedrock entitlement form and an IAM grant. `docs/PRODUCT-FEEDBACK.
 what runs versus what is only designed, tool by tool.
 
 ```bash
-python3 tests/test_gate.py tests/test_policy.py tests/test_steering.py \
-        tests/test_scenarios.py tests/test_refusal_contract.py \
-        tests/test_abstention.py tests/test_ingest.py
+# python runs only the FIRST path given, so loop - one invocation per suite.
+for t in tests/test_*.py; do PYTHONPATH=src python3 "$t" > /dev/null \
+  && echo "PASS $t" || echo "FAIL $t"; done
 ```
 
 ---
@@ -121,7 +121,7 @@ Samsung and GE calibrate to the appliance they sold you; nobody calibrates to
 your pan. Falls back to a local JSON file when AWS isn't configured, so the
 project runs with no credentials.
 
-**AgentCore Evaluations** (`evals/abstention.py`) measures the thing that
+**The abstention harness** (`evals/abstention.py`) measures the thing that
 actually matters — not accuracy, but whether it declines *exactly* when its
 perception is unreliable:
 
@@ -184,7 +184,7 @@ pip install -e .
 PYTHONPATH=src uvicorn mise.app:app --port 8000
 ```
 
-- MCP endpoint: `http://localhost:8000/mcp` (streamable HTTP, spec 2025-11-25)
+- MCP endpoint: `http://localhost:8000/mcp` (mcp 2.1 `MCPServer`, streamable HTTP, spec 2025-11-25)
 - Panel: `http://localhost:8000/dev/panel`
 - **Demo control: `http://localhost:8000/dev/control`** — four buttons, one per verdict
 - Phone camera: `http://localhost:8000/dev/camera` (needs HTTPS — see below)
@@ -231,7 +231,7 @@ python3 evals/abstention.py             # abstention quality over labelled frame
 | `src/mise/policy.py` | the refusal contract, locally evaluable |
 | `src/mise/steering.py` | Strands steering at the tool boundary |
 | `policies/mise.dogwood` | the Dogwood temporal policy source |
-| `evals/abstention.py` | the **pan** eval — abstention quality, not accuracy |
+| `evals/abstention.py` | the **pan** eval — abstention quality, not accuracy. Stdlib, no AWS: AgentCore Evaluations scores *traces*, and `StartBatchEvaluation` cannot take a corpus. |
 | `evals/trajectory.py` | the **agent** eval — did the graph take a sane path |
 | `evals/opik_pack.py` | optional Opik wrapper for comparing model profiles |
 | `src/mise/agents.py` | the hot graph — perception, a conditional critic, risk, arbiter |

@@ -341,7 +341,7 @@
     <p>
       This brief separates what has been executed from what is designed. Every claim below marked
       <span class="tag t-run">runs</span> was run in this session against the tree at commit
-      <code>ce28bad</code> (PR #1, merged). Where this brief once described a defect, it now
+      <code>HEAD</code> on <code>master</code>. Where this brief once described a defect, it now
       describes the fix and links the commit that made it.
     </p>
 
@@ -357,7 +357,7 @@
     <div class="note ok">
       <strong>A clean clone installs and imports.</strong> <code>mcp</code> is capped below 2.0:
       an uncapped <code>&gt;=1.27</code> resolved to 2.2.0, where <code>mcp.server.fastmcp</code>
-      no longer exists. Seven test suites pass. The AWS layers are declared as a
+      no longer exists. Ten test suites pass. The AWS layers are declared as a
       <code>[aws]</code> extra rather than silently absent.
     </div>
 
@@ -458,13 +458,14 @@
 
     <div class="col">
       <div class="note bad">
-        <strong>A bug this sequence exposes, and it is in the shipped code.</strong>
+        <strong>A bug this sequence exposed, now fixed and locked.</strong>
         Policy rule 2 suppresses a repeated refusal within 120 s, but the cooldown is keyed on
         <em>step</em>, not on <em>verdict</em>, and the suppressed string is
         <code>"Still not yet."</code> — a wait phrasing. So a normal <code>wait</code> at t=0 will
         silence a genuine <code>refuse</code> at t=30 s and speak a confident readiness claim from a
-        frame the system just decided it could not read. Proven live this session. It is the one
-        defect that defeats the project's own thesis, and it is a five-line fix.
+        frame the system just decided it could not read. Proven live, then fixed: cooldowns are now keyed per verdict
+        (commit <code>4aacd20</code>), and <code>tests/test_refusal_contract.py</code> exists so it
+        cannot come back. It was the one defect that defeated the project's own thesis.
       </div>
     </div>
   </section>
@@ -528,7 +529,7 @@
           </tr>
           <tr>
             <td>ChoreographyAgent</td>
-            <td><code>start_service</code></td>
+            <td><code>start_recipe</code></td>
             <td>The only node that genuinely <em>plans</em>: backward-schedule two pans to land together, re-plan when one stalls.</td>
             <td><span class="tag t-gap">unbuilt</span></td>
           </tr>
@@ -604,7 +605,7 @@ HOT = b.build()</code></pre>
       </p>
       <p>
         <code>src/mise/server.py</code> already matches this contract exactly —
-        <code>FastMCP(..., stateless_http=True, json_response=True)</code>. That is a genuine piece of
+        <code>MCPServer(...)</code> with <code>streamable_http_app(stateless_http=True, json_response=True)</code>. That is a genuine piece of
         luck worth keeping: the existing server is already Runtime-shaped.
       </p>
 <pre><code><span class="cmt"># Deployment A — the MCP server (the fast plane)</span>
@@ -676,7 +677,7 @@ when { context.gate_passed formerly within 20 seconds };
 <span class="cmt">// 2. Alarm fatigue. A coach that repeats itself gets muted,</span>
 <span class="cmt">//    and a muted coach cannot warn you when it matters.</span>
 forbid (principal, action == Action::<span class="str">"speak_refusal"</span>, resource)
-when { count(context.refusals_for_step) &gt;= 1 since within 120 seconds };
+when { count(context.refusals_for_step_and_kind) &gt;= 1 since within 120 seconds };
 
 <span class="cmt">// 3. Danger is never rate-limited and never confidence-gated.</span>
 permit (principal, action == Action::<span class="str">"speak_abort"</span>, resource);
@@ -737,7 +738,7 @@ when { count(context.corrections_for_step) &gt;= 3 since within 3600 seconds };<
         2025-11-25)."</em>
       </p>
       <div class="note ok">
-        <strong>This requirement is already met and I verified it.</strong> With <code>mcp</code> 1.30
+        <strong>This requirement is already met and I verified it.</strong> With <code>mcp</code> 2.1
         the server answers <code>initialize</code> with
         <code>"protocolVersion":"2025-11-25"</code>. Note that the SDK's
         <code>DEFAULT_NEGOTIATED_VERSION</code> is <code>2025-03-26</code> — the higher version is
@@ -745,12 +746,12 @@ when { count(context.corrections_for_step) &gt;= 3 since within 3600 seconds };<
       </div>
     </div>
 
-    <h3 class="col" style="margin-bottom:14px">Built — one server, six tools</h3>
+    <h3 class="col" style="margin-bottom:14px">Built — one server, five tools (plus one planned)</h3>
     <div class="scroll">
       <table>
         <thead><tr><th>Tool</th><th>Visibility</th><th>Role</th><th>Status</th></tr></thead>
         <tbody>
-          <tr><td><code>start_service</code></td><td>model</td><td>Begin one dish or several. Supersedes <code>start_recipe</code> when choreography lands.</td><td><span class="tag t-run">runs</span></td></tr>
+          <tr><td><code>start_recipe</code></td><td>model</td><td>Begin a recipe. Becomes <code>start_service</code> if multi-dish choreography is ever built.</td><td><span class="tag t-run">runs</span></td></tr>
           <tr><td><code>check_doneness</code></td><td>model</td><td>The primary tool. Applies the cook's calibrated gate, feeds the policy ledger, returns one of four verdicts.</td><td><span class="tag t-run">runs</span></td></tr>
           <tr><td><code>advance_step</code></td><td>model</td><td>Guarded by <code>guarded_advance()</code> and by Strands steering. Cannot execute on a stale observation.</td><td><span class="tag t-run">runs</span></td></tr>
           <tr><td><code>record_correction</code></td><td>model</td><td>"too_early" / "too_late" moves the threshold through Memory, bounded and reversible.</td><td><span class="tag t-run">runs</span></td></tr>
@@ -788,8 +789,8 @@ when { count(context.corrections_for_step) &gt;= 3 since within 3600 seconds };<
         <em>optional</em> friction log worth up to a 10% bonus. Separately, the rules make
         <strong>Product Feedback mandatory</strong> for each tool, API or SDK used, answering five
         named questions: what you used it for, what worked well, what needs work, how onboarding
-        felt, and whether you would build with it again. That artefact does not exist yet. Also note
-        four of the six banked friction entries are about Ring and Vega — tracks not used here. They
+        felt, and whether you would build with it again. That artefact is <code>docs/PRODUCT-FEEDBACK.md</code>. Also note
+        four of the nine banked friction entries are about Ring and Vega — tracks not used here. They
         are legitimate friction, but they do not discharge the mandatory requirement.
       </div>
     </div>
@@ -912,7 +913,7 @@ when { count(context.corrections_for_step) &gt;= 3 since within 3600 seconds };<
 
   <p class="foot">
     Mise · build brief for the Alexa+ track, Build Ship Shape: Amazon Developer Hackathon.
-    Written against commit <code>3890240</code> on branch <code>dev</code>, 16 September 2026.
+    Written against <code>master</code>, 17 September 2026.
     Diagrams are interactive — hover to trace, and use the view chapters in each figure.
     Claims marked <span class="tag t-run">runs</span> were executed; everything else is design.
   </p>

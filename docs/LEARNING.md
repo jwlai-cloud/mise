@@ -11,7 +11,8 @@ HTTP** — a single endpoint that can stream responses, as opposed to the older
 SSE pair or stdio for local servers.
 
 - Spec: https://modelcontextprotocol.io/specification/2025-11-25/basic/transports
-- Python SDK: https://github.com/modelcontextprotocol/python-sdk (we use `mcp` 1.27, `FastMCP`)
+- Python SDK: https://github.com/modelcontextprotocol/python-sdk (we use `mcp` 2.1, `MCPServer`;
+  `FastMCP` was the 1.x name and is a stub in 2.x that raises with a link to the migration guide)
 
 `stateless_http=True` + `json_response=True` means every request is independent —
 simpler to scale, and the right default when the real state lives in a cache

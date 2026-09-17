@@ -92,7 +92,8 @@ path. Putting it there would not make the product more agentic; it would make it
 
 **The stack, precisely:**
 
-- **MCP Python SDK 1.30** (`FastMCP`), streamable HTTP, `stateless_http=True`. Verified
+- **MCP Python SDK 2.1** (`MCPServer`), streamable HTTP, `stateless_http=True` on
+  `streamable_http_app()`. Verified
   negotiating protocol **2025-11-25** with a real MCP client. Five tools plus a `ui://`
   resource.
 - **MCP Apps** (SEP-1865). The panel is a `ui://mise/panel` resource; `panel_state` is
@@ -115,11 +116,20 @@ path. Putting it there would not make the product more agentic; it would make it
   exactly.
 - **Strands Agents** — a `BeforeToolCallEvent` steering hook that cancels `advance_step`
   at the tool boundary.
+- **Strands Agents** — and this is the part we would show first. The perception loop is a real
+  `strands.multiagent` Graph: a perception agent, an **adversarial critic on a conditional
+  edge** that fires only when confidence is under 0.75 or doneness is within 0.1 of the gate,
+  a risk node running in parallel rather than downstream so danger is never gated on the
+  perception agent's confidence, and a **deterministic arbiter** that is the sole writer.
+  It runs offline in CI against a scripted model provider, so the topology is executed by
+  tests rather than asserted about — the proof is the execution order: a clear frame runs
+  `perceive, risk`; a steamed one runs `perceive, risk, critique`. `strands.telemetry` emits
+  OpenTelemetry per node.
 - Python 3.11+, no framework. The gate is 60 lines and has no model in it.
 
 **What actually runs today, stated plainly:** the gate, the session policy, the full MCP
 surface, the panel, the scripted perception source, and the whole ingest path including
-validation and the confidence clamp. Seven test suites pass on a clean clone with no AWS
+validation and the confidence clamp. Ten test suites pass on a clean clone with no AWS
 credentials at all. **Not yet executed:** the Bedrock call itself, and anything deployed
 to AWS. The call shape is verified against botocore's own service model rather than
 recalled, but it has never been invoked — we are blocked on an account-level entitlement
@@ -180,7 +190,7 @@ specifically so the first one can never come back.
 - **All four verdicts run with no model, no camera and no AWS credentials.** Each is
   reachable in about two seconds via a scripted scenario. Verified live over HTTP and
   through a real MCP client at protocol `2025-11-25`.
-- **Seven test suites, green on a clean clone.** Including one whose only job is to prove
+- **Ten test suites, green on a clean clone.** Including one whose only job is to prove
   a refusal is never spoken as a wait, and one that takes a single model output
   (`doneness=0.88, confidence=0.31`) and flips only the ground truth — `0.86` → the
   abstention was unnecessary, `0.55` → it was justified. Same output, opposite verdict.
@@ -188,6 +198,14 @@ specifically so the first one can never come back.
   of the time on the same frames. *Ten hand-written seed rows — the harness prints
   `NOT A RESULT` under 100 frames on purpose. This is a smoke test for the metric, not
   evidence about the system.*
+- **A multi-agent graph that runs in CI with no credentials.** Finding that a Strands `Agent`
+  will drive from a scripted model provider — structured output is forced through a tool call,
+  so the fake must emit a `toolUse` block — is what turned the agent from a diagram into
+  something tests execute.
+- **Two evals scoring two different objects.** `abstention.py` scores the *pan* over a labelled
+  corpus; `trajectory.py` scores the *agent* over real OTEL spans. Running the second found
+  that Strands emits only `gen_ai.*` mechanics and none of the domain values, so the graph now
+  emits its own `mise.frame` span.
 - **Five contract bugs found and fixed**, each with a regression test, three of them found
   by adversarial review of our own work rather than by tests failing.
 - **Nine friction-log entries**, three from this week's AWS work — including a Bedrock
@@ -239,9 +257,8 @@ and that is precisely where a wrong "proceed" will come from.
 - **Surface `risk="watch"` or delete it.** It is currently inert: the gate has no branch for
   it and the panel never shows it, so ambiguous haze routes into a band that does nothing.
   A safety story the code does not tell is worse than no story.
-- **The hot Strands graph** — perception, an adversarial critic on a conditional edge that
-  fires only near the decision boundary, and a risk node in its own failure domain, joined
-  by a deterministic arbiter. Designed and diagrammed; the seam it sits behind is built.
+- **Run the hot graph against a real model.** The graph itself is built and runs in CI; what
+  it has never done is see an actual pan.
 - **Multi-dish choreography** — backwards-scheduling two pans to land together. Nothing on
   the market does it. It needs per-dish state throughout and a perception layer that can
   attribute state to two pans, so it is honestly a next-version feature rather than a

@@ -2,6 +2,78 @@
 
 Newest first. **Read this first in any new session.**
 
+## 2026-09-17 — session 3 (Claude Code)
+
+### Done this session
+- **The hot graph exists and runs.** A real `strands.multiagent` Graph — perception, a
+  conditional critic, a parallel risk node, a deterministic arbiter — executed by tests with
+  no credentials. The unlock was that a Strands `Agent` drives from a scripted `Model`
+  provider, once you know structured output is forced through a **tool call** so the fake must
+  emit a `toolUse` block rather than text. ADR-0005 records the design.
+  *This had been "designed, not built" for three sessions on a reason that did not hold.*
+- **`evals/trajectory.py`** — the agent eval. Five rules checkable in a trace rather than
+  asserted in a unit test. Deploys as AgentCore's `codeBased` evaluator (which takes a
+  `lambdaArn`, not inline code), and runs offline now.
+- **Migrated to MCP 2.1.** Four lines. `_meta` with `visibility:["app"]`, the `ui://` mime and
+  protocol 2025-11-25 all verified byte-identical **on the wire**. The `<2.2` ceiling is now
+  strands-agents', not ours. A real behaviour change came with it: 2.x runs sync tool handlers
+  on a worker thread, so `_session` and `LEDGER` became a genuine race — one `RLock` via a
+  `_serialized` decorator.
+- **`docs/PRODUCT.md`** — the problem, the persona, the edge over prior art, the non-goals.
+  The repo had no persona, no non-goals and no impact case; the only mention of the last was
+  the brief saying one did not exist.
+- `infra/preflight.py` names the exact blocking IAM action; `infra/SETUP.md` is four ordered
+  steps. ADR-0001 marked partly superseded by ADR-0004.
+
+### Corrected this session
+- **AgentCore Evaluations cannot score a labelled corpus.** I claimed it could and reversed a
+  recommendation on that basis before reading the API. `StartBatchEvaluation` takes CloudWatch
+  log groups; `Evaluate` takes OTEL spans; `level` is TOOL_CALL|TRACE|SESSION. It is a trace
+  product. Two evals, two objects, neither replacing the other.
+- **The deploy substrate is not "already there."** An earlier probe's classifier read only the
+  first line of a multi-line error, so every AccessDenied looked like a pass. Only ECR is
+  reachable.
+- **509 lines of subagent-written Opik code were committed unread** by a `git add -A` and
+  pushed publicly. Now read in full; it stays, and one duplication was removed.
+- A doc grill (32 agents, 25 findings surviving refutation) found the documents had drifted
+  badly from the code — see below.
+
+### Fixed from that grill
+- The **published** brief was telling judges the rule-2 flattening bug was live in shipped
+  code. It was fixed in `4aacd20` and the same page said so 120 lines earlier. It also printed
+  the pre-fix Dogwood rule, called a mandatory artefact missing, and carried three different
+  provenance stamps.
+- **The required technology was named wrongly in five documents**, including the mandatory
+  Product Feedback: `mcp 1.30 / FastMCP` against a tree pinned `>=2.1,<2.2` importing
+  `MCPServer`.
+- The **judges' own test command silently ran one file** — `python3 a.py b.py c.py` runs only
+  the first and prints "passed". Now a loop.
+- `README.md` credited the corpus eval to AgentCore Evaluations — the exact claim `e0682a6`
+  exists to correct.
+- The hot graph, the strongest Tech Implementation asset, was filed in the Devpost writeup
+  under "What's next" as unbuilt.
+- ADR-0003's "three independent layers" amended: two entry points to one evaluator plus an
+  undeployed file. Its retired 33% figure annotated.
+
+### Next (priority order)
+1. **The two AWS blockers, both with the account owner.** The Anthropic use-case form and
+   `infra/deployer-policy.json` + the `mise-runtime` role. `python3 infra/preflight.py` reports
+   10 of 11 checks blocked.
+2. **The SPIKE.** Every threshold in the system — the 0.6 floor, the view ceilings, the
+   critic's 0.75/0.1 — is an unmeasured guess, and only labelled frames move them.
+3. **`risk="watch"` is still inert.** No branch in `gate.py`, no state in the panel.
+4. Demo video cut; the one-page infographic after the spike has numbers.
+
+### Known gaps, recorded rather than hidden
+- The confidence clamp cannot catch a model that **misreports** the view. That is where a
+  wrong `proceed` will come from.
+- No Bedrock model has ever been invoked. Nothing is deployed to AWS.
+- `evals/labels.jsonl` is ten hand-written rows. Every percentage is a smoke test.
+- Design remains the weakest rubric axis: one panel, a control page, a camera page.
+
+### Changed since last entry
+- Session 2's next-steps list is superseded by the above.
+
 ## 2026-09-16 — session 2 (Claude Code)
 
 ### Done this session

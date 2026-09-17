@@ -10,7 +10,7 @@ that is precise about it.
 
 ---
 
-## MCP Python SDK — `mcp` 1.30 (`FastMCP`)
+## MCP Python SDK — `mcp` 2.1 (`MCPServer`)
 
 **What we used it for.** The whole server surface: five tools, a `ui://` resource, streamable
 HTTP, `stateless_http=True`, `json_response=True`. This is the project's required technology and
@@ -24,9 +24,13 @@ first try.
 
 **What needs work.**
 
-- **The 1.x → 2.x break is silent until import.** `mcp>=1.27` in a manifest resolves to 2.x today,
+- **The 1.x → 2.x break is silent until import.** `mcp>=1.27` in a manifest resolves to 2.x,
   where `mcp.server.fastmcp` no longer exists (`FastMCP` became `MCPServer`). Our own README
-  instructions therefore failed on a clean clone until we capped `mcp<2`. The runtime error is
+  instructions failed on a clean clone until we noticed. We capped, then migrated: the project
+  now runs `MCPServer` on 2.1, with `stateless_http` and `json_response` moved off the
+  constructor onto `streamable_http_app()`, and `host="0.0.0.0"` newly load-bearing because 2.x
+  defaults to 127.0.0.1 and AgentCore Runtime expects 0.0.0.0:8000. The `<2.2` ceiling is
+  imposed by strands-agents 1.56, not by us. The runtime error is
   clear and links the migration guide, which is good — but every tutorial, and AWS's own AgentCore
   MCP walkthrough, still shows the 1.x import, so new projects will keep resolving to a version
   their copied code cannot run. **A deprecation shim, or a louder note on the 1.x docs, would save
