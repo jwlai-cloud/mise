@@ -129,7 +129,7 @@ path. Putting it there would not make the product more agentic; it would make it
 
 **What actually runs today, stated plainly:** the gate, the session policy, the full MCP
 surface, the panel, the scripted perception source, and the whole ingest path including
-validation and the confidence clamp. Ten test suites pass on a clean clone with no AWS
+validation and the confidence clamp. Eleven test suites pass on a clean clone with no AWS
 credentials at all. **Not yet executed:** the Bedrock call itself, and anything deployed
 to AWS. The call shape is verified against botocore's own service model rather than
 recalled, but it has never been invoked — we are blocked on an account-level entitlement
@@ -190,7 +190,7 @@ specifically so the first one can never come back.
 - **All four verdicts run with no model, no camera and no AWS credentials.** Each is
   reachable in about two seconds via a scripted scenario. Verified live over HTTP and
   through a real MCP client at protocol `2025-11-25`.
-- **Ten test suites, green on a clean clone.** Including one whose only job is to prove
+- **Eleven test suites, green on a clean clone.** Including one whose only job is to prove
   a refusal is never spoken as a wait, and one that takes a single model output
   (`doneness=0.88, confidence=0.31`) and flips only the ground truth — `0.86` → the
   abstention was unnecessary, `0.55` → it was justified. Same output, opposite verdict.
@@ -310,3 +310,7 @@ returns 406 — that is the protocol requiring an `Accept` header, not a fault.
 - [ ] Open Source mini challenge: contribution URL + repo URL + GitHub username
 - [ ] AWS Builder mini challenge: named services with the reason for each primitive
 - [ ] Confirm the abstention figures still carry their "not a result" caveat
+- [ ] `python3 tests/test_docs_match_code.py` passes — the docs make no claim the tree
+      contradicts. A 32-agent review found 25 such claims once; this is the cheap guard.
+- [ ] Re-read the **published** brief last. It is the artefact someone may already hold a
+      link to, so a stale claim there outlives a stale claim in the repo.

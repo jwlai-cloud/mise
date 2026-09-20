@@ -91,7 +91,7 @@ python3 evals/abstention.py
   written and ready in `infra/`; attaching them needs an admin principal.
 - `mcp` 2.1 `MCPServer` API: `@mcp.tool(meta=...)`, `@mcp.resource(uri, mime_type=...)`,
   `mcp.streamable_http_app(stateless_http=True, json_response=True, host="0.0.0.0")`.
-  `FastMCP` is the 1.x name and does not exist in 2.x. `meta` populates `_meta`, which is how MCP Apps links
+  The 1.x name for it does not exist in 2.x — the module is a stub that raises. `meta` populates `_meta`, which is how MCP Apps links
   a tool to its `ui://` panel.
 - Both mini challenges are in scope: **AWS Builder** (needs *documented* integrations
   — ARCHITECTURE.md must name each service and why that primitive) and **Open Source**
@@ -113,8 +113,12 @@ Use the `hackathon-brainstorm` skill's grill mode (say "grill me"). Start here:
 1. **The coding-agent comparison.** What does this do that a generic VLM loop with a
    prompt couldn't? If the answer is only "the contract", is the contract *visible*
    to a judge in three minutes, or does it need explaining?
-2. **The abstention metric.** 33% abstention precision is currently bad. Is the
-   metric right, or is it measuring the wrong thing?
+2. **The abstention metric.** *Answered — the metric was measuring the wrong thing.*
+   It scored a lucky estimate as a reason the refusal was unnecessary, marking the
+   steamed-lens and blocked-pan frames as mistakes. Now judged on
+   `|doneness − label_doneness| > 0.15`. The live question is different: every
+   threshold in the system is an unmeasured guess, and only labelled frames move
+   them. See `docs/SPIKE.md`.
 3. **Demo failure.** If the vision model misjudges live in front of a judge, what
    happens? Is there a pre-recorded fallback, and does using one undermine the pitch?
 4. **The multi-dish claim.** It's the strongest remaining differentiator and it is not
