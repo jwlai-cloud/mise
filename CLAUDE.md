@@ -66,9 +66,10 @@ PYTHONPATH=src uvicorn mise.app:app --port 8000
 # arm:     curl "localhost:8000/dev/scenario?name=steam&at=40"
 # reset:   curl "localhost:8000/dev/reset"     <- clears learned calibration
 
-python3 tests/test_gate.py tests/test_policy.py tests/test_steering.py
-python3 tests/test_scenarios.py tests/test_refusal_contract.py tests/test_abstention.py
+# python runs only the FIRST path it is given — loop, one invocation per suite.
+for t in tests/test_*.py; do PYTHONPATH=src python3 "$t" >/dev/null && echo "PASS $t" || echo "FAIL $t"; done
 python3 evals/abstention.py
+python3 infra/preflight.py   # what is still blocking AWS, by exact IAM action
 ```
 
 ## Already verified — do not re-research
