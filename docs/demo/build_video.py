@@ -29,6 +29,7 @@ OUT = ROOT / "docs" / "demo" / "mise-demo.mp4"
 PORT = 8999
 BASE = f"http://localhost:{PORT}"
 VOICE, RATE = "Ava (Premium)", 172
+# Narration spells the name "Meez" - TTS reads "Mise" as "mize". Captions keep "Mise".
 FONT = "/System/Library/Fonts/Supplemental/Arial Unicode.ttf"
 BG = "0x0B0E13"
 PAD = 0.7                                        # silence after each line, seconds
@@ -40,7 +41,7 @@ SEGMENTS = [
     ("01", "panel", ("clean_run", 8), "Mise — the cooking assistant that tells you to wait",
      "Every recipe app pushes you forward, on a timer measured in someone else's kitchen. "
      "If you've never made the dish, you don't know what until translucent looks like. "
-     "Mise watches the pan, and tells you to wait."),
+     "Meez watches the pan, and tells you to wait."),
     ("02", "still", "control", "Simulated Alexa+ experience — scripted pan, real MCP server",
      "This is a simulated Alexa Plus experience. A scripted pan stands in for the camera, "
      "so every verdict can be shown on cue. Everything else, the MCP server, the gate, "
@@ -50,7 +51,7 @@ SEGMENTS = [
      "with the evidence, and roughly how long. When the gate is met, it says go."),
     ("04", "panel", ("steam", 38), "Past the gate — and it still refuses",
      "Now steam crosses the lens. Look at the meter. It is past the gate. A system that "
-     "guessed would say go. Mise says it can't tell, and shows why: confidence point two "
+     "guessed would say go. Meez says it can't tell, and shows why: confidence point two "
      "two, against point six needed. Refusing is the product, not an error."),
     ("05", "panel", ("blocked", 32), "Frames stop  →  the panel dims",
      "If the frames stop, the panel dims, and counts the seconds since it last saw the "
@@ -77,7 +78,7 @@ SEGMENTS = [
      "Eleven test suites pass on a clean clone, with no cloud credentials. One exists "
      "only to prove a refusal is never spoken as a wait."),
     ("11", "still", "close", "github.com/jwlai-cloud/mise",
-     "Every recipe app pushes you forward. This one can refuse. Mise is open source, on "
+     "Every recipe app pushes you forward. This one can refuse. Meez is open source, on "
      "GitHub."),
 ]
 
