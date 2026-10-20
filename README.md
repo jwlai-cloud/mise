@@ -1,6 +1,10 @@
 # Mise
 
-**The cooking assistant that tells you to wait.**
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![MCP](https://img.shields.io/badge/MCP-2025--11--25-informational.svg)](https://modelcontextprotocol.io/specification/2025-11-25)
+
+**The cooking assistant that tells you to wait.** Open source under the
+[Apache License 2.0](LICENSE).
 
 Built for the Alexa+ track of *Build, Ship, Shape: Amazon Developer Hackathon* (2026).
 

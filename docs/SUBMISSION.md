@@ -277,7 +277,8 @@ and that is precisely where a wrong "proceed" will come from.
 ## Try it out
 
 - **Repository:** https://github.com/jwlai-cloud/mise (Apache-2.0)
-- **Demo video:** [SPIKE/FINAL — under 3 minutes, YouTube or Vimeo, public]
+- **Demo video:** [YOUTUBE URL — paste after upload] · 2:18, built from the real system by
+  `docs/demo/build_video.py` (`docs/demo/mise-demo.mp4`, shot list in `docs/demo/script.md`)
 
 ```bash
 git clone https://github.com/jwlai-cloud/mise.git && cd mise
