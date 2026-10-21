@@ -775,14 +775,15 @@ when { count(context.corrections_for_step) &gt;= 3 since within 3600 seconds };<
         panel keeps polling and rendering after the voice turn is over. Lead with this.
       </div>
 
-      <h3>Used — Amazon's own MCP server</h3>
+      <h3>Used, narrowly — Amazon Devices Builder Tools</h3>
       <p>
-        There is no Alexa-provided MCP server to consume; Alexa+ is the host, not a server. But the
-        resources page ships <strong>Amazon Devices Builder Tools</strong>, an MCP server for AI coding
-        assistants offering documentation search and guided workflows. Wire it into this session's
-        coding assistant and use it. Two reasons, both worth points: it is a tool "used in your
-        project," which the <em>mandatory</em> product-feedback requirement then covers, and it will
-        generate friction-log entries on contact.
+        There is no Alexa-provided MCP server to consume; Alexa+ is the host, not a server. The
+        resources page lists <strong>Amazon Devices Builder Tools</strong> under "All Tracks". We ran
+        it over stdio for documentation search only. It describes itself as a Fire TV (Vega OS) tool,
+        but its index does cover Alexa+ add-on docs. It also negotiated MCP protocol
+        <code>2025-03-26</code> when asked for <code>2025-11-25</code>, the minimum this track
+        requires. Both points are in <code>docs/FRICTION.md</code> entry 10 and in
+        <code>docs/PRODUCT-FEEDBACK.md</code>.
       </p>
       <div class="note warn">
         <strong>Two feedback artefacts, not one.</strong> <code>docs/FRICTION.md</code> is the
@@ -790,7 +791,7 @@ when { count(context.corrections_for_step) &gt;= 3 since within 3600 seconds };<
         <strong>Product Feedback mandatory</strong> for each tool, API or SDK used, answering five
         named questions: what you used it for, what worked well, what needs work, how onboarding
         felt, and whether you would build with it again. That artefact is <code>docs/PRODUCT-FEEDBACK.md</code>. Also note
-        four of the nine banked friction entries are about Ring and Vega — tracks not used here. They
+        four of the ten banked friction entries are about Ring and Vega — tracks not used here. They
         are legitimate friction, but they do not discharge the mandatory requirement.
       </div>
     </div>

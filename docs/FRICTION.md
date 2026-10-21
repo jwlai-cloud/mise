@@ -72,3 +72,34 @@ an execution-role template in the prerequisites section, the way the Cognito set
 ids from the API — you must already know the id to test whether you can use it.
 **Suggestion:** treat model discovery as part of invoke access, or document the pairing, so
 `InvokeModel` grants are not handed out without the read action that makes them usable.
+
+## 10. Amazon's MCP server for this hackathon speaks an older MCP than the track requires
+**Severity:** medium · **Task:** use Amazon Devices Builder Tools (listed under "Start Here (All
+Tracks)" on the hackathon resources page) to search Alexa+ documentation from a coding agent ·
+**Tool:** `@amazon-devices/amazon-devices-buildertools-mcp` 1.0.17, driven over stdio with raw
+JSON-RPC.
+
+What we hit, in order:
+
+- **Protocol version.** We sent `initialize` with `protocolVersion: "2025-11-25"`; it answered
+  **`2025-03-26`**. The Alexa+ track's minimum acceptable MCP version is 2025-11-25, so Amazon's own
+  MCP server for the event is two spec revisions behind the floor it sets for entrants.
+- **Framed as Fire TV only.** `--help` says it serves "apps for Amazon Vega OS"; the docs say Vega OS
+  full support, Fire OS limited, and never mention Alexa. Yet it is the first item under "All
+  Tracks". An Alexa+ entrant has every reason to conclude it is not for them.
+- **But its index does cover Alexa+.** `search_documentation` returned Alexa+ add-on pages — including
+  the web-simulator page, which we had not found any other way. It is more useful for this track
+  than it says it is.
+- **The platform filter is required and does not filter.** `target_platform.device_os` is mandatory
+  and documents only `vega_os` / `fire_os`. A `vega_os` filter still returned Alexa+ pages, and an
+  undocumented `["alexa"]` was accepted silently and returned a 2020 APL blog post.
+- **Every tool is gated on `set_project_context`,** including doc search, and the refusal arrives as
+  a successful tool result containing an error string rather than as a JSON-RPC error.
+- **Install noise.** `npx` printed nine deprecation warnings, two of them (`tar@6`, `glob@7`) citing
+  publicised security vulnerabilities.
+
+**Workaround:** run it over stdio rather than `init-context` (which writes into the agent's MCP
+config and drops a steering document into the workspace), call `set_project_context({config:{}})`
+first, and pass any `device_os`. **Suggestion:** negotiate 2025-11-25; describe the Alexa+ doc
+coverage the index already has; validate or drop the `device_os` filter; return the context gate as a
+protocol error.

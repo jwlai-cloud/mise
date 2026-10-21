@@ -69,7 +69,8 @@ def test_mcp_version_matches_pyproject():
     pin = next(d for d in spec["project"]["dependencies"] if d.startswith("mcp"))
     major = re.search(r">=(\d+)\.", pin).group(1)
     for rel, text in docs():
-        wrong = re.findall(r"`?mcp`? (\d+)\.\d+", text)
+        # Standalone `mcp` only: "buildertools-mcp 1.0.17" is another package's version.
+        wrong = re.findall(r"(?<![\w/-])`?mcp`? (\d+)\.\d+", text)
         bad = sorted({v for v in wrong if v != major})
         check(f"{rel} names mcp {major}.x", not bad,
               f"also names mcp {bad} but pyproject pins {pin}" if bad else "")

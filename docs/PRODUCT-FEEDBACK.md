@@ -234,6 +234,42 @@ More services should copy this.
 
 ---
 
+## Amazon Devices Builder Tools MCP (`@amazon-devices/amazon-devices-buildertools-mcp` 1.0.17)
+
+**What we used it for.** Narrowly, and late: documentation search from a coding agent. We ran
+the server over stdio and called `set_project_context` then `search_documentation`. We did
+**not** run `init-context`, which writes into the agent's MCP config and drops a steering file
+into the workspace, and we did not use its Vega workflows (performance traces, crash
+symbolication), which do not apply to an Alexa+ MCP server.
+
+**What worked well.** The documentation index is better than its own description. A search
+for Alexa+ add-ons returned the add-on web-simulator page, which we had not found through the
+public docs navigation. It runs locally, needs no account, and states plainly which data leaves
+the machine: search queries go to Amazon, code and prompts do not.
+
+**What needs work.**
+
+- **It negotiates MCP protocol `2025-03-26` when asked for `2025-11-25`.** That is the minimum
+  version the Alexa+ track requires of entrants. Amazon's own MCP server for this event sits
+  two spec revisions below it.
+- **It describes itself as Fire TV only** ("apps for Amazon Vega OS"; Vega full support, Fire OS
+  limited, no mention of Alexa), but the hackathon lists it first under "Start Here (All
+  Tracks)". Alexa+ entrants will reasonably skip it, even though its index covers their docs.
+- **`target_platform.device_os` is required, documents only `vega_os` / `fire_os`, and does not
+  actually filter.** A `vega_os` filter returned Alexa+ pages. An undocumented `["alexa"]` was
+  accepted silently and returned a 2020 blog post.
+- **Every tool, including doc search, refuses until `set_project_context` has been called.** The
+  refusal comes back as a successful tool result with an error string inside, not as a
+  JSON-RPC error, so a client can't tell it from a real answer without parsing text.
+
+**Onboarding.** One `npx` command, but it printed nine deprecation warnings, two of them
+citing publicised security vulnerabilities in pinned dependencies.
+
+**Would we build with it again.** For a Fire TV app, yes. For Alexa+, only if it advertised
+the Alexa+ coverage it already has and spoke the protocol version the track requires.
+
+---
+
 ## Playwright and ffmpeg (supporting, non-Amazon)
 
 **What we used them for.** Capturing the panel's five states as screenshots, and recording the
