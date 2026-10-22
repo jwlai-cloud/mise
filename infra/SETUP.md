@@ -13,6 +13,14 @@ blocked**. Only ECR is reachable.
 
 ---
 
+## Fastest path — one paste
+
+Steps 2 and 3 below are scripted in `infra/cloudshell-setup.sh`, generated from the JSON
+files in this directory. On your laptop: `pbcopy < infra/cloudshell-setup.sh`. In the AWS
+console, signed in as an admin, open **CloudShell** (the `>_` icon in the top bar), paste,
+press Enter. It checks it is in the right account first, and is safe to re-run. Then do
+step 1 (the form) and step 4 (verify).
+
 ## Step 1 — the Anthropic use-case form  ·  *you, in the console*
 
 **No IAM policy works around this, and it gates every model call in every
