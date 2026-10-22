@@ -1,8 +1,8 @@
 # Demo video — shot list
 
-Target ≤ 2:50 (hard limit 3:00). Built by `docs/demo/build_video.py`; narration is
-macOS TTS (Ava, Premium) for now — re-record with a real voice by dropping
-`seg_<id>.wav` files into the work directory and re-running with `--voice-dir`.
+Runtime 2:38 (hard limit 3:00). Built by `docs/demo/build_video.py`; narration is
+Gemini-TTS (`gemini-2.5-pro-tts`, voice Kore) via Cloud Text-to-Speech. Re-record with
+a real voice by dropping `seg_<id>.wav` files into a directory and passing `--voice-dir`.
 
 Everything shown is the real code. The pan is **scripted** — the video says so in
 shot 2, because the rules require a simulated experience to be clearly shown as one.

@@ -3,6 +3,8 @@
 
     python3 docs/demo/build_video.py                    # TTS narration (macOS `say`)
     python3 docs/demo/build_video.py --voice-dir DIR    # use DIR/seg_<id>.wav where present
+    MISE_GCLOUD_ACCOUNT=you@gmail.com MISE_GCLOUD_PROJECT=your-project \
+      python3 docs/demo/build_video.py --tts gemini --voice Charon   # Gemini-TTS
 
 Every terminal shot is captured from a real command run during the build, and
 every panel shot is the real panel driven by the real scenario rig. Nothing on
@@ -109,13 +111,42 @@ def rpc(method, params, rid):
 
 # ---------------------------------------------------------------- narration
 
-def narrate(voice_dir: Path | None) -> dict[str, float]:
+STYLE = ("Narrate a short product demo. Warm, clear and confident, like a builder "
+         "explaining their own project. Measured pace, natural pauses, not salesy.")
+
+
+def gemini_tts(text: str, voice: str, out: Path):
+    """Cloud Text-to-Speech, Gemini-TTS model. Auth is a gcloud user token for the
+    account in MISE_GCLOUD_ACCOUNT, billed to MISE_GCLOUD_PROJECT - both required,
+    so a work account or project is never picked up by default."""
+    import base64
+    acct, proj = os.environ.get("MISE_GCLOUD_ACCOUNT"), os.environ.get("MISE_GCLOUD_PROJECT")
+    if not (acct and proj):
+        sys.exit("--tts gemini needs MISE_GCLOUD_ACCOUNT and MISE_GCLOUD_PROJECT")
+    token = run(["gcloud", "auth", "print-access-token", "--account", acct]).stdout.strip()
+    body = json.dumps({"input": {"prompt": STYLE, "text": text},
+                       "voice": {"languageCode": "en-US", "name": voice,
+                                 "modelName": "gemini-2.5-pro-tts"},
+                       "audioConfig": {"audioEncoding": "LINEAR16",
+                                       "sampleRateHertz": 24000}}).encode()
+    req = urllib.request.Request(
+        "https://texttospeech.googleapis.com/v1/text:synthesize", data=body,
+        headers={"Authorization": f"Bearer {token}", "x-goog-user-project": proj,
+                 "Content-Type": "application/json"})
+    out.write_bytes(base64.b64decode(json.load(urllib.request.urlopen(req, timeout=120))["audioContent"]))
+
+
+def narrate(voice_dir: Path | None, tts: str = "say", voice: str = "Charon") -> dict[str, float]:
     durs = {}
     for sid, _k, _s, _c, text in SEGMENTS:
         wav = WORK / f"seg_{sid}.wav"
         own = voice_dir / f"seg_{sid}.wav" if voice_dir else None
         if own and own.exists():
             run(["ffmpeg", "-y", "-i", str(own), "-ar", "48000", "-ac", "2", str(wav)])
+        elif tts == "gemini":
+            raw = WORK / f"seg_{sid}.gemini.wav"
+            gemini_tts(text, voice, raw)
+            run(["ffmpeg", "-y", "-i", str(raw), "-ar", "48000", "-ac", "2", str(wav)])
         else:
             aiff = WORK / f"seg_{sid}.aiff"
             run(["say", "-v", VOICE, "-r", str(RATE), "-o", str(aiff), text])
@@ -394,11 +425,13 @@ def build_segment(sid, kind, src, caption, dur, first, last) -> Path:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--voice-dir", type=Path)
+    ap.add_argument("--tts", choices=["say", "gemini"], default="say")
+    ap.add_argument("--voice", default="Charon", help="Gemini-TTS voice name")
     a = ap.parse_args()
     WORK.mkdir(parents=True, exist_ok=True)
 
     print("1. narration")
-    durs = narrate(a.voice_dir)
+    durs = narrate(a.voice_dir, a.tts, a.voice)
     total = sum(durs.values())
     print(f"   total {total:.1f}s")
     if total >= 178:
