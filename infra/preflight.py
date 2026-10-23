@@ -97,7 +97,18 @@ def main() -> int:
     # --- the deploy substrate, usually already present ---
     check("ecr", lambda: "reachable" if boto3.client(
         "ecr", region_name=REGION).describe_repositories(maxResults=1) else "")
-    check("s3", lambda: f"{len(boto3.client('s3').list_buckets()['Buckets'])} buckets")
+    def s3_scoped():
+        """Test the S3 scope we actually grant - mise-* buckets - not account-wide
+        listing, which the project never needs. NoSuchBucket means permitted."""
+        try:
+            boto3.client("s3", region_name=REGION).list_objects_v2(
+                Bucket=f"mise-preflight-probe-{ident['Account']}", MaxKeys=1)
+            return "mise-* buckets reachable"
+        except Exception as exc:
+            if getattr(exc, "response", {}).get("Error", {}).get("Code") == "NoSuchBucket":
+                return "mise-* scope permitted (no bucket yet)"
+            raise
+    check("s3 (mise-* scope)", s3_scoped)
     check("cloudwatch logs", lambda: "reachable" if boto3.client(
         "logs", region_name=REGION).describe_log_groups(limit=1) else "")
 
