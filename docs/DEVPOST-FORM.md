@@ -5,9 +5,8 @@ the submitter can make; a suggestion is given where one is safe to give.
 
 ---
 
-**Upload a File** — `mise-technical-pack.zip` (2 MB): the design brief as PDF, the three
-architecture diagrams, ARCHITECTURE, the five ADRs, PRODUCT, PRODUCT-FEEDBACK, FRICTION, SPIKE,
-SUBMISSION and README, with a `00-START-HERE.txt` index.
+**Upload a File** — `Mise-technical-brief.pdf` (16 pages, 1.6 MB): the design brief with the
+system architecture, voice-turn sequence and agent topology diagrams inline.
 
 **Submitter Type** (yours) — Individual
 
