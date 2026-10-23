@@ -275,7 +275,7 @@ and that is precisely where a wrong "proceed" will come from.
 ## Try it out
 
 - **Repository:** https://github.com/jwlai-cloud/mise (Apache-2.0)
-- **Demo video:** [YOUTUBE URL — paste after upload] · 2:04, recorded from the real system by
+- **Demo video:** https://youtu.be/auhxmEcjYvg · 2:04, recorded from the real system by
   `docs/demo/build_interaction.py` (`docs/demo/mise-interaction.mp4`). Alexa+ is simulated and
   labelled; the pan frames are AI-generated stills. Everything else is live: each frame goes
   through the real `/ingest` and is judged by Gemini 2.5 Flash through Mise's schema and clamp,
@@ -307,7 +307,7 @@ returns 406 — that is the protocol requiring an `Accept` header, not a fault.
 
 - [x] No unearned claims — the perception-accuracy placeholders were cut, not filled. Four
       generated stills judged for the video are a demo, not a measurement
-- [ ] Demo video under 3 min, public, showing the MCP server in action
+- [x] Demo video under 3 min, public, showing the MCP server in action
 - [ ] Story, video and diagrams tell the same story with the same numbers
 - [ ] `docs/PRODUCT-FEEDBACK.md` pasted into the product-feedback field (**required**)
 - [ ] `docs/FRICTION.md` submitted (optional, up to 10% bonus)

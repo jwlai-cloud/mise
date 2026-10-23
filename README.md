@@ -6,6 +6,9 @@
 **The cooking assistant that tells you to wait.** Open source under the
 [Apache License 2.0](LICENSE).
 
+**[▶ Demo video (2:04)](https://youtu.be/auhxmEcjYvg)** — a cook, a simulated Alexa+, and the
+real MCP server: live perception, real tool calls, and the panel refusing to guess.
+
 Built for the Alexa+ track of *Build, Ship, Shape: Amazon Developer Hackathon* (2026).
 
 Every recipe app pushes you forward through steps. Mise holds you back, because it
