@@ -837,7 +837,7 @@ when { count(context.corrections_for_step) &gt;= 3 since within 3600 seconds };<
       <li><span class="cost">~6 h</span><b>The hot graph</b>
         Perception, critic, risk, arbiter. Turn on Observability and keep the trace waterfall — it is the proof the critic is conditional rather than decorative.</li>
       <li><span class="cost">done</span><b>Video and submission</b>
-        2:04, recorded from the running system by <code>docs/demo/build_interaction.py</code>: a cook, a labelled simulated Alexa+, and the real server. Each still is POSTed to <code>/ingest</code> and judged live; every tool call is real JSON-RPC to <code>/mcp</code>; Alexa speaks the <code>say</code> that came back; the Echo Show panel is the real <code>ui://mise/panel</code>, reached through a postMessage host bridge. All four verdicts' worth of story — wait, refuse, a blocked <code>advance_step</code>, and an unprompted OFF THE HEAT.</li>
+        2:04, recorded from the running system by <code>docs/demo/build_interaction.py</code>: a cook, a labelled simulated Alexa+, and the real server. Each still is POSTed to <code>/ingest</code> and judged live; every tool call is real JSON-RPC to <code>/mcp</code>; Alexa speaks the <code>say</code> that came back; the Echo Show panel is the real <code>ui://mise/panel</code>, reached through a postMessage host bridge. Three of the four verdicts — wait, refuse, abort — plus a blocked <code>advance_step</code>. Proceed never appears: the model never judged a still past the gate.</li>
     </ol>
 
     <div class="col">
