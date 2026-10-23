@@ -1,9 +1,9 @@
 # Devpost submission — Mise
 
-**Status: draft, 2026-09-16.** Accurate against commit `c20b1b8`. Every number here was
-produced by running something; nothing is projected. Sections marked **[SPIKE]** are
-placeholders for the week-one perception numbers and must be filled or cut before
-submitting — do not ship a claim the corpus has not earned.
+**Status: final, 2026-10-23.** Accurate against `master`. Every number here was produced by
+running something; nothing is projected. **Perception accuracy was never measured** — no
+real camera frame has been judged by a real model — so this writeup claims none. The
+week-one spike that would have produced those numbers is listed under What's next.
 
 Track: **Alexa+** · Mini challenges: **AWS Builder**, **Open Source**
 Deadline: 2026-10-23 12:00 PDT
@@ -214,9 +214,6 @@ specifically so the first one can never come back.
 - **The panel's refuse state is the whole pitch in one frame**: the progress meter is
   visibly *past* the gate marker while the verdict reads CAN'T TELL, with
   `confidence 0.22 / 0.60 needed` underneath. A judge gets it without narration.
-- **[SPIKE]** perception accuracy against hand-labelled frames — target: monotonic and
-  within ±0.15, with confidence dropping when the view is blocked.
-
 **What we deliberately did not build**, so that cut-by-choice reads differently from
 didn't-finish: this is not a safety device and makes no health claims; it is not a recipe
 database (seven MCP servers already are); it never touches the hob; and multi-dish
@@ -303,7 +300,8 @@ returns 406 — that is the protocol requiring an `Accept` header, not a fault.
 
 ## Pre-submission checklist
 
-- [ ] **[SPIKE]** placeholders filled or cut — no unearned claims
+- [x] No unearned claims — the perception-accuracy placeholders were cut, not filled, because
+      no real frame was ever judged by a real model
 - [ ] Demo video under 3 min, public, showing the MCP server in action
 - [ ] Story, video and diagrams tell the same story with the same numbers
 - [ ] `docs/PRODUCT-FEEDBACK.md` pasted into the product-feedback field (**required**)

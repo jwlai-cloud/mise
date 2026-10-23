@@ -46,9 +46,10 @@ decline to judge at all when it can't see properly.
   the first — `StartBatchEvaluation` takes CloudWatch log groups, never a corpus.
 - Strands emits only `gen_ai.*` mechanics. The domain values a trajectory
   evaluator needs come from the `mise.frame` span in `agents.py`.
-- `docs/SUBMISSION.md` is the Devpost writeup. Sections marked **[SPIKE]** are
-  placeholders for perception numbers that do not exist yet — fill or cut them, never
-  ship an unearned claim. It ends in a pre-submission checklist.
+- `docs/SUBMISSION.md` is the Devpost writeup, final as of 2026-10-23. Perception accuracy
+  was never measured, so it claims none — the placeholders for those numbers were cut, not
+  filled. Never add a perception number without a labelled corpus behind it. It ends in a
+  pre-submission checklist.
 - `docs/PRODUCT-FEEDBACK.md` is a **required** submission element and a different
   artefact: five named questions per tool, API or SDK actually used. Keep it honest
   about what was run versus only designed against — overstating depth is easier for
