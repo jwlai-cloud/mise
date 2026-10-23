@@ -197,8 +197,9 @@ we could not do ourselves, which is the only real test of a managed service.
 - **The perception graph runs on the real SDK** (strands-agents 1.61): a `strands.multiagent`
   `GraphBuilder` graph with a perception agent, a critic on a conditional edge, a parallel risk
   node and a deterministic arbiter, plus `strands.telemetry` OpenTelemetry spans. It executes in
-  CI against a scripted `Model` provider, so the topology is tested rather than asserted. It has
-  not yet been driven by a real model — `BedrockModel` is wired but Bedrock is blocked.
+  CI against a scripted `Model` provider, and **against a real model** — Gemini 2.5 Flash through
+  Strands' `GeminiModel` — for the demo, where every frame goes through it. `BedrockModel` is wired
+  but Bedrock is blocked; swapping providers was one constructor.
 - **A `BeforeToolCallEvent` steering hook** that cancels `advance_step` at the tool boundary, so
   the model cannot talk its way past the gate. Unit-tested against a fake event, not yet inside a
   live `Agent` loop; it degrades to absent if strands is not installed.
@@ -219,6 +220,13 @@ the decision boundary, so cost stays flat.
 - **The 100% vs 82.5% steering benchmark is AWS's own six-scenario eval, not an external
   benchmark.** It is cited prominently and the provenance is easy to overlook — we quote it as AWS's
   own figure for exactly that reason. Labelling it clearly in the docs would protect its credibility.
+
+- **What a real model exposed that the scripted one hid.** Structured output fields with
+  defaults are optional to the model, and Gemini skipped `evidence`; fields without descriptions
+  get guessed at, and it put doneness in `confidence`. Neither is a Strands bug, but the
+  structured-output docs could say plainly that the Pydantic field descriptions *are* the
+  prompt. And `GeminiModel`'s client binds to the first event loop, so `asyncio.run` per call
+  fails the second call with "Event loop is closed" — worth one line in the provider docs.
 
 **Onboarding.** Good conceptual docs, thin on what a hook receives — we could not determine the
 event object's shape without reading source.
@@ -280,9 +288,10 @@ the Alexa+ coverage it already has and spoke the protocol version the track requ
 
 ## Supporting, non-Amazon: Gemini on Vertex AI, Playwright, ffmpeg
 
-**Gemini 2.5 Flash** stood in as the perception model for the demo video while Bedrock was blocked
-(`MISE_VISION_BACKEND=gemini`, same response schema, same confidence clamp). It judged four
+**Gemini 2.5 Flash** stood in as the model behind the Strands agents for the demo video while
+Bedrock was blocked (`MISE_VISION_BACKEND=graph MISE_GRAPH_MODEL=gemini`). It judged four
 AI-generated stills — generated with `gemini-2.5-flash-image` — through the real `/ingest` path.
+An earlier single-call path (`MISE_VISION_BACKEND=gemini`) is kept as a fallback.
 Worth recording honestly: at temperature 0 it still read the same still as 0.50 on one run and 0.70
 on the next, and it first rated a smoking pan `risk: none` until the smoke was made thicker. Neither
 is a measurement; both are reasons the clamp and the refusal exist. **Gemini-TTS** voiced the video.

@@ -103,3 +103,32 @@ config and drops a steering document into the workspace), call `set_project_cont
 first, and pass any `device_os`. **Suggestion:** negotiate 2025-11-25; describe the Alexa+ doc
 coverage the index already has; validate or drop the `device_os` filter; return the context gate as a
 protocol error.
+
+## 11. A Strands graph that passes every scripted test can still be blind to a real model
+
+**Task:** run the existing Strands multi-agent graph (perceive → conditional critic + risk →
+arbiter) against a real model for the first time, Gemini 2.5 Flash through `strands.models.gemini`.
+**Severity:** high — each failure either dropped every frame or produced a confident wrong verdict,
+and all three were invisible to a test suite that passed.
+
+**Expected:** swap `ScriptedModel` for `GeminiModel`, get readings. **Actual, in order:**
+
+1. **The frame never reached the agents.** `judge()` received the JPEG and invoked the graph with
+   the text prompt only. A scripted model ignores its input, so eight tests passed while a real
+   model was asked to judge a pan it could not see. *Fix:* pass `[{"text":…},{"image":…}]` as the
+   task — Strands forwards the original task blocks to downstream nodes, so the critic and risk
+   agents get the pixels too. Regression test: `test_every_agent_is_shown_the_frame`.
+2. **Second frame: `RuntimeError: Event loop is closed`.** `asyncio.run()` per frame creates a new
+   loop; the `genai.Client` inside `GeminiModel` stays bound to the first. *Fix:* one loop for the
+   life of the graph.
+3. **Structured output fields were read as suggestions.** `evidence: str = ""` was optional to the
+   model, Gemini skipped it, and `validate()` rightly dropped the frame. With no field descriptions,
+   it then put the doneness of a clear raw-onion frame (0.1) into `confidence`, and the system
+   refused to judge a pan it could see perfectly. *Fix:* `evidence` required with `min_length=1`;
+   every numeric field described ("NOT how cooked the food is").
+
+**Workaround:** the fixes above. **Suggestion:** the structured-output docs should say plainly that
+Pydantic field descriptions are the prompt and that defaulted fields are optional to the model;
+the Gemini provider docs should note the client binds to the first event loop. For our own
+process: a scripted model proves topology, never perception — run one real call end to end in
+week one.

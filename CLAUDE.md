@@ -39,7 +39,7 @@ decline to judge at all when it can't see properly.
   `docs/ARCHITECTURE.md` (current state), `docs/adr/` (immutable decisions),
   `docs/PROGRESS.md` (every session), `docs/LEARNING.md`, `docs/FRICTION.md`.
 - `docs/FRICTION.md` is worth up to **10% of the judging score**. Add to it whenever
-  a platform wastes your time. Ten entries are banked.
+  a platform wastes your time. Eleven entries are banked.
 - **Two evals, two objects, not alternatives.** `evals/abstention.py` scores the
   *pan* (one labelled corpus, offline, no AWS). `evals/trajectory.py` scores the
   *agent* (real OTEL traces). AgentCore Evaluations does the second and cannot do

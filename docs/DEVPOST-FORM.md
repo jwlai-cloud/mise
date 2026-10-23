@@ -35,7 +35,9 @@ system architecture, voice-turn sequence and agent topology diagrams inline.
 > (strands-agents 1.61): a perception agent, an adversarial critic on a *conditional edge* that
 > fires only when confidence is under 0.75 or doneness is near the gate, a risk node running in
 > parallel so danger is never gated on perception confidence, and a deterministic arbiter that is
-> the single writer to the state cache. It executes in CI against a scripted model provider, so the
+> the single writer to the state cache. It runs against a real model — Gemini 2.5 Flash via Strands'
+> `GeminiModel` provider — for every frame in the demo video (the critic woke only on the steamed
+> lens; `docs/demo/agent-run.md`), and in CI against a scripted model provider, so the
 > topology is proven by execution order (a clear frame runs `perceive, risk`; a steamed one runs
 > `perceive, risk, critique`), with `strands.telemetry` OpenTelemetry spans per node plus a custom
 > `mise.frame` span carrying the domain values a trajectory evaluator needs. A Strands
@@ -142,7 +144,8 @@ If you'd rather not enter, answer **No** and leave the rest blank.
 > - **Bedrock AgentCore Memory / Policy / Runtime** — implemented with local fallbacks; not deployed.
 > - **AWS CLI / IAM / CloudShell** — capability probing, setup and teardown scripts.
 > - **Amazon Devices Builder Tools MCP** — documentation search from a coding agent.
-> - Supporting, non-Amazon: Gemini 2.5 Flash (demo perception), Gemini image + TTS (demo assets),
+> - Supporting, non-Amazon: Gemini 2.5 Flash (the model behind the Strands agents in the demo),
+>   Gemini image + TTS (demo assets),
 >   Playwright + ffmpeg (recording the demo from the running system), Claude Code (development).
 
 **Q2 — What worked well?**
@@ -205,8 +208,8 @@ representative or agent of the promotion entities. Only you can attest to these.
 
 **Which AI tools have you leveraged?**
 
-> Claude Code (Claude Opus) for development, code review and documentation. Gemini 2.5 Flash on
-> Vertex AI as the perception model for the demo video; Gemini 2.5 Flash Image to generate the demo's
+> Claude Code (Claude Opus) for development, code review and documentation. Gemini 2.5 Flash as
+> the model behind the Strands agent graph in the demo video; Gemini 2.5 Flash Image to generate the demo's
 > pan stills (labelled as AI-generated on screen); Gemini-TTS for the demo's voices.
 
 **Level of learning** (yours) — suggested: Significant

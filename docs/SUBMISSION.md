@@ -2,8 +2,8 @@
 
 **Status: final, 2026-10-23.** Accurate against `master`. Every number here was produced by
 running something; nothing is projected. **Perception accuracy was never measured** — a real
-model (Gemini 2.5 Flash) judged four AI-generated stills for the demo video, but no real camera
-frame and no labelled corpus — so this writeup claims none. The
+Strands agent graph, with Gemini 2.5 Flash as its model, judged four AI-generated stills for the
+demo video, but no real camera frame and no labelled corpus — so this writeup claims none. The
 week-one spike that would have produced those numbers is listed under What's next.
 
 Track: **Alexa+** · Mini challenges: **AWS Builder**, **Open Source**
@@ -101,9 +101,10 @@ path. Putting it there would not make the product more agentic; it would make it
   marked `_meta.ui.visibility: ["app"]`, which makes it callable by the page and invisible
   to the model. That plus a `setInterval` is how the screen stays alive after the voice
   turn ends — the single most valuable capability we found anywhere in this stack.
-- **Gemini 2.5 Flash on Vertex AI** — the perception backend that actually ran. It judged
-  the demo video's frames through the same response schema and the same confidence clamp,
-  via `MISE_VISION_BACKEND=gemini`. Gemini-TTS voiced the video.
+- **Gemini 2.5 Flash** — the model behind every agent in the graph for the demo, through
+  Strands' own `GeminiModel` provider (`MISE_VISION_BACKEND=graph MISE_GRAPH_MODEL=gemini`;
+  Vertex AI, or a Google AI Studio key). The stand-in while Bedrock is blocked — the graph does
+  not know which provider it is talking to. Gemini-TTS voiced the video.
 - **Strands Agents** — a `BeforeToolCallEvent` steering hook that cancels `advance_step`
   at the tool boundary.
 - **Strands Agents** — and this is the part we would show first. The perception loop is a real
@@ -111,9 +112,12 @@ path. Putting it there would not make the product more agentic; it would make it
   edge** that fires only when confidence is under 0.75 or doneness is within 0.1 of the gate,
   a risk node running in parallel rather than downstream so danger is never gated on the
   perception agent's confidence, and a **deterministic arbiter** that is the sole writer.
-  It runs offline in CI against a scripted model provider, so the topology is executed by
-  tests rather than asserted about — the proof is the execution order: a clear frame runs
-  `perceive, risk`; a steamed one runs `perceive, risk, critique`. `strands.telemetry` emits
+  **It runs against a real model**: in the demo, every frame POSTed to `/ingest` goes through
+  it, and the critic woke on exactly one of four — the steamed lens, where the perception agent
+  admitted it could not see ([docs/demo/agent-run.md](demo/agent-run.md)). It also runs in CI
+  against a scripted model provider, so the topology and the conditional edge are tested on
+  every push with no credentials: a clear frame runs `perceive, risk`; a steamed one adds
+  `critique`. `strands.telemetry` emits
   OpenTelemetry per node.
 - Python 3.11+, no framework. The gate is 60 lines and has no model in it.
 
@@ -139,8 +143,8 @@ local fallback, and none has been invoked against AWS.
 
 **What actually runs today, stated plainly:** the gate, the session policy, the full MCP
 surface, the panel, the scripted perception source, and the whole ingest path including
-validation and the confidence clamp — exercised end to end with a real vision model (Gemini)
-for the demo. Eleven test suites pass on a clean clone with no AWS credentials at all.
+validation and the confidence clamp — and the Strands agent graph on a real model (Gemini),
+end to end through `/ingest` for the demo. Eleven test suites pass on a clean clone with no AWS credentials at all.
 **Not yet executed: anything on AWS.** No Bedrock call, no AgentCore resource, nothing
 deployed. The call shape is verified against botocore's own service model rather than
 recalled, but it has never been invoked — we are blocked on an account-level entitlement
@@ -209,17 +213,18 @@ specifically so the first one can never come back.
   of the time on the same frames. *Ten hand-written seed rows — the harness prints
   `NOT A RESULT` under 100 frames on purpose. This is a smoke test for the metric, not
   evidence about the system.*
-- **A multi-agent graph that runs in CI with no credentials.** Finding that a Strands `Agent`
-  will drive from a scripted model provider — structured output is forced through a tool call,
-  so the fake must emit a `toolUse` block — is what turned the agent from a diagram into
-  something tests execute.
+- **A multi-agent graph that runs on a real model and in CI.** The same Strands graph that
+  judged the demo's frames on Gemini runs in CI against a scripted provider. Running it for real
+  found three bugs the scripted tests could not: the frame was never passed to the agents, an
+  undescribed `confidence` field got the model's doneness, and a fresh event loop per frame
+  broke the second call. Each is fixed; the first has a regression test.
 - **Two evals scoring two different objects.** `abstention.py` scores the *pan* over a labelled
   corpus; `trajectory.py` scores the *agent* over real OTEL spans. Running the second found
   that Strands emits only `gen_ai.*` mechanics and none of the domain values, so the graph now
   emits its own `mise.frame` span.
 - **Five contract bugs found and fixed**, each with a regression test, three of them found
   by adversarial review of our own work rather than by tests failing.
-- **Ten friction-log entries**, four from this week's AWS work — including a Bedrock
+- **Eleven friction-log entries**, four from this week's AWS work and one from the first real run of the agent graph — including a Bedrock
   entitlement gap that surfaces as `ResourceNotFoundException` rather than an auth error,
   which costs an hour of checking the wrong thing.
 - **The panel's refuse state is the whole pitch in one frame**: the progress meter is
@@ -265,8 +270,8 @@ and that is precisely where a wrong "proceed" will come from.
 - **Surface `risk="watch"` or delete it.** It is currently inert: the gate has no branch for
   it and the panel never shows it, so ambiguous haze routes into a band that does nothing.
   A safety story the code does not tell is worse than no story.
-- **Run the hot graph against a real model.** The graph itself is built and runs in CI; what
-  it has never done is see an actual pan.
+- **Run the hot graph on Bedrock, against a real pan.** It runs on Gemini over generated
+  stills; the next step is the same graph on `BedrockModel` over the spike's camera frames.
 - **Multi-dish choreography** — backwards-scheduling two pans to land together. Nothing on
   the market does it. It needs per-dish state throughout and a perception layer that can
   attribute state to two pans, so it is honestly a next-version feature rather than a
@@ -287,10 +292,10 @@ and that is precisely where a wrong "proceed" will come from.
 ## Try it out
 
 - **Repository:** https://github.com/jwlai-cloud/mise (Apache-2.0)
-- **Demo video:** https://youtu.be/auhxmEcjYvg · 2:04, recorded from the real system by
+- **Demo video:** https://youtu.be/auhxmEcjYvg · 2:13, recorded from the real system by
   `docs/demo/build_interaction.py` (`docs/demo/mise-interaction.mp4`). Alexa+ is simulated and
   labelled; the pan frames are AI-generated stills. Everything else is live: each frame goes
-  through the real `/ingest` and is judged by Gemini 2.5 Flash through Mise's schema and clamp,
+  through the real `/ingest` and is judged by the Strands agent graph on Gemini 2.5 Flash,
   every tool call is real JSON-RPC to `/mcp`, Alexa speaks the returned `say`, and the Echo Show
   panel is the real `ui://mise/panel` calling `panel_state` through a host bridge.
 

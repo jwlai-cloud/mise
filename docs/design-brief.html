@@ -363,21 +363,23 @@
     </div>
 
     <div class="note warn">
-      <strong>The multi-agent graph runs, offline, in CI.</strong> A real
-      <code>strands.multiagent</code> Graph with three LLM agents and a deterministic arbiter,
-      driven by a scripted model provider so the topology and the conditional edge are executed
-      by tests rather than asserted about. The proof is in the execution order: a clear frame runs
+      <strong>The multi-agent graph runs — on a real model, and in CI.</strong> A real
+      <code>strands.multiagent</code> Graph with three LLM agents and a deterministic arbiter.
+      In the demo, Gemini 2.5 Flash drives every agent through Strands' <code>GeminiModel</code>
+      and every frame goes through it; in CI a scripted model provider drives it, so the topology
+      and the conditional edge are tested on every push. The proof is in the execution order: a clear frame runs
       <code>perceive, risk</code>; a steamed one runs <code>perceive, risk, critique</code>.
       <code>MISE_VISION_BACKEND=graph</code> swaps it in behind the existing interface.
     </div>
 
     <div class="note warn">
       <strong>A real model has run — but not Bedrock, and not on a real pan.</strong> For the demo
-      video, <code>GeminiVision</code> (<code>MISE_VISION_BACKEND=gemini</code>, Gemini 2.5 Flash on
-      Vertex) judged four AI-generated stills through the production <code>/ingest</code> path, with
-      the same schema and the same clamp: steam came back at 0.6 and was clamped to 0.35, so the
-      server refused. That is a demonstration, not a measurement — no camera frame, no labelled
-      corpus, and the same still read 0.50 on one run and 0.70 on the next.
+      video the Strands graph (<code>MISE_VISION_BACKEND=graph MISE_GRAPH_MODEL=gemini</code>) judged
+      four AI-generated stills through the production <code>/ingest</code> path. The critic woke on
+      one frame of four — the steamed lens, where the perception agent admitted it could not see —
+      and the server refused. That is a demonstration, not a measurement: no camera frame, no
+      labelled corpus. Running it for real also found three bugs the scripted tests had hidden;
+      all fixed.
       <code>BedrockModel</code> and <code>BedrockVision.judge</code> have still never been invoked —
       blocked on an unsubmitted Anthropic use-case form and an IAM grant, neither of which is code.
       Nothing is deployed to AWS.
@@ -796,7 +798,7 @@ when { count(context.corrections_for_step) &gt;= 3 since within 3600 seconds };<
         <strong>Product Feedback mandatory</strong> for each tool, API or SDK used, answering five
         named questions: what you used it for, what worked well, what needs work, how onboarding
         felt, and whether you would build with it again. That artefact is <code>docs/PRODUCT-FEEDBACK.md</code>. Also note
-        four of the ten banked friction entries are about Ring and Vega — tracks not used here. They
+        four of the eleven banked friction entries are about Ring and Vega — tracks not used here. They
         are legitimate friction, but they do not discharge the mandatory requirement.
       </div>
     </div>
@@ -838,7 +840,7 @@ when { count(context.corrections_for_step) &gt;= 3 since within 3600 seconds };<
       <li><span class="cost">~6 h</span><b>The hot graph</b>
         Perception, critic, risk, arbiter. Turn on Observability and keep the trace waterfall — it is the proof the critic is conditional rather than decorative.</li>
       <li><span class="cost">done</span><b>Video and submission</b>
-        2:04, recorded from the running system by <code>docs/demo/build_interaction.py</code>: a cook, a labelled simulated Alexa+, and the real server. Each still is POSTed to <code>/ingest</code> and judged live; every tool call is real JSON-RPC to <code>/mcp</code>; Alexa speaks the <code>say</code> that came back; the Echo Show panel is the real <code>ui://mise/panel</code>, reached through a postMessage host bridge. Three of the four verdicts — wait, refuse, abort — plus a blocked <code>advance_step</code>. Proceed never appears: the model never judged a still past the gate.</li>
+        2:13, recorded from the running system by <code>docs/demo/build_interaction.py</code>: a cook, a labelled simulated Alexa+, and the real server. Each still is POSTed to <code>/ingest</code> and judged live by the Strands agent graph; every tool call is real JSON-RPC to <code>/mcp</code>; Alexa speaks the <code>say</code> that came back; the Echo Show panel is the real <code>ui://mise/panel</code>, reached through a postMessage host bridge. Three of the four verdicts — wait, refuse, abort — plus a blocked <code>advance_step</code>. Proceed never appears: the model never judged a still past the gate.</li>
     </ol>
 
     <div class="col">

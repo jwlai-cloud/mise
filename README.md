@@ -6,7 +6,7 @@
 **The cooking assistant that tells you to wait.** Open source under the
 [Apache License 2.0](LICENSE).
 
-**[▶ Demo video (2:04)](https://youtu.be/auhxmEcjYvg)** — a cook, a simulated Alexa+, and the
+**[▶ Demo video (2:13)](https://youtu.be/auhxmEcjYvg)** — a cook, a simulated Alexa+, and the
 real MCP server: live perception, real tool calls, and the panel refusing to guess.
 
 Built for the Alexa+ track of *Build, Ship, Shape: Amazon Developer Hackathon* (2026).
@@ -40,6 +40,26 @@ Then open **<http://localhost:8000/dev/control>** and press **1 2 3 4**, watchin
 **Button 2 is the whole submission.** The perception is prior art and we say so
 ([ADR-0002](docs/adr/0002-positioning-against-prior-art.md)); what does not exist
 anywhere else is readiness as a *refusable* tool contract.
+
+### Run the real agents — needs a free Gemini API key
+
+The buttons above use a scripted pan. To have the **Strands agent graph** judge real frames —
+perceive, a critic that only runs when unsure, risk, a deterministic arbiter — give it a model.
+A [Google AI Studio](https://aistudio.google.com/apikey) key takes a minute:
+
+```bash
+.venv/bin/pip install -e '.[gemini]'
+GEMINI_API_KEY=... MISE_VISION_BACKEND=graph MISE_GRAPH_MODEL=gemini \
+  PYTHONPATH=src .venv/bin/python -m uvicorn mise.app:app --port 8000
+curl -s "localhost:8000/dev/start?step=1" >/dev/null
+curl -s --data-binary @docs/demo/stills/f3_steam.jpg localhost:8000/ingest | python3 -m json.tool
+```
+
+The response shows which agents ran (`agents.order`), what each said, and the clamped reading.
+The steam frame wakes the critic and ends in a refusal; `f2_soft.jpg` runs perceive and risk
+only. Then `check_doneness` over MCP answers from that reading. With AWS credentials and Bedrock
+access, drop `MISE_GRAPH_MODEL` and the same graph uses `BedrockModel`. What we saw:
+[docs/demo/agent-run.md](docs/demo/agent-run.md).
 
 ### If you want to drive it as a real MCP client
 

@@ -40,8 +40,10 @@
         font:600 16px -apple-system,sans-serif;color:var(--dim);text-align:center}
   .node small{display:block;font:500 12px var(--mono);color:var(--faint);margin-top:3px}
   .node.on{border-color:var(--cool);color:var(--ink);background:#16222f;box-shadow:0 0 0 4px rgba(111,168,220,.12)}
+  .node.skip{opacity:.35;border-style:dashed}
   .arrow{color:var(--faint);font:300 26px sans-serif}
-  .rows{display:grid;grid-template-columns:200px 1fr;row-gap:9px;font:500 21px var(--mono)}
+  .rows{display:grid;grid-template-columns:190px 1fr;row-gap:8px;font:500 20px var(--mono)}
+  .rows dd{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
   .rows dt{color:var(--faint)}
   .rows dd{color:var(--ink)}
   .clamp s{color:var(--faint)}
@@ -91,7 +93,7 @@
   <div class="logo">Mise<b>.</b></div>
   <span class="pill">simulated Alexa+ experience</span>
   <span class="pill real">real MCP server</span>
-  <span class="pill real">live perception · Gemini 2.5 Flash</span>
+  <span class="pill real">Strands agents · Gemini 2.5 Flash</span>
   <div class="grow"></div>
   <div class="beat" id="beat"></div>
 </div>
@@ -104,20 +106,20 @@
 </div>
 
 <div class="trace">
-  <div class="h">this frame, through the real ingest path</div>
+  <div class="h">this frame, through the Strands agent graph</div>
   <div class="flow">
-    <div class="node" id="n-ingest">/ingest<small>phone JPEG</small></div><div class="arrow">→</div>
-    <div class="node" id="n-model">vision model<small>Gemini 2.5 Flash</small></div><div class="arrow">→</div>
-    <div class="node" id="n-clamp">clamp<small>view ceiling</small></div><div class="arrow">→</div>
-    <div class="node" id="n-cache">CookState<small>cache</small></div><div class="arrow">→</div>
-    <div class="node" id="n-gate">gate<small>no model</small></div>
+    <div class="node" id="n-perceive">perceive<small>agent</small></div><div class="arrow">→</div>
+    <div class="node" id="n-critique">critique<small>only if unsure</small></div><div class="arrow">→</div>
+    <div class="node" id="n-risk">risk<small>agent</small></div><div class="arrow">→</div>
+    <div class="node" id="n-arbiter">arbiter<small>clamp · no model</small></div><div class="arrow">→</div>
+    <div class="node" id="n-gate">gate<small>MCP tool</small></div>
   </div>
   <dl class="rows">
-    <dt>model saw</dt><dd id="r-view">—</dd>
+    <dt>perceive saw</dt><dd id="r-view">—</dd>
     <dt>doneness</dt><dd id="r-done">—</dd>
     <dt>confidence</dt><dd id="r-conf" class="clamp">—</dd>
-    <dt>risk</dt><dd id="r-risk">—</dd>
-    <dt>evidence</dt><dd id="r-ev" style="font-size:19px">—</dd>
+    <dt>critic</dt><dd id="r-crit" style="font-size:18px">—</dd>
+    <dt>risk agent</dt><dd id="r-risk">—</dd>
   </dl>
 </div>
 
@@ -156,15 +158,30 @@ window.stage = {
               setTimeout(() => { f.src = src; f.style.opacity = 1; }, 250); },
   posting(on){ $("post").classList.toggle("on", on); },
   flow(ids){ document.querySelectorAll(".node").forEach(n => n.classList.toggle("on", ids.includes(n.id))); },
-  reading(raw, rd){
+  clear(){ ["r-view","r-done","r-conf","r-crit","r-risk"].forEach(id => $(id).textContent = "…");
+           document.querySelectorAll(".node").forEach(n => n.classList.remove("on","skip")); },
+  // Light the agents in the order Strands actually ran them.
+  agents(order, step){
+    const ids = ["perceive","critique","risk","arbiter"]; let t = 0;
+    ids.forEach(id => {
+      const ran = id === "arbiter" || order.includes(id);
+      setTimeout(() => { const n = $("n-" + id); n.classList.toggle("on", ran); n.classList.toggle("skip", !ran); }, t);
+      t += step;
+    });
+  },
+  reading(raw, rd, ag){
     const obs = raw.obstructions && raw.obstructions.length ? " · " + raw.obstructions.join(", ") : "";
-    $("r-view").innerHTML = `${esc(raw.view)}${obs ? `<span class="hl-wait">${esc(obs)}</span>` : ""}`;
+    $("r-view").innerHTML = `${esc(raw.view)}${obs ? `<span class="hl-wait">${esc(obs)}</span>` : ""}` +
+      `  <span style="color:var(--faint);font-size:17px">“${esc(raw.evidence)}”</span>`;
     $("r-done").textContent = Number(rd.doneness).toFixed(2) + "   (gate 0.80)";
     const a = Number(raw.confidence).toFixed(2), b = Number(rd.confidence).toFixed(2);
-    $("r-conf").innerHTML = a === b ? `${b}` : `<s>${a}</s>  →  <b>${b}</b>   clamped by what it admitted`;
+    const c = ag && ag.critique;
+    $("r-conf").innerHTML = a === b ? `${b}` :
+      `<s>${a}</s>  →  <b>${b}</b>   ${c ? "lowered by critic + clamp" : "capped by the view clamp"}`;
+    $("r-crit").innerHTML = c ? `<span class="hl-wait">dissents</span> — “${esc(c.reason)}”`
+                              : `<span style="color:var(--faint)">skipped — clear and confident, far from the gate</span>`;
     const rk = rd.risk;
-    $("r-risk").innerHTML = rk === "urgent" ? `<span class="hl-stop">URGENT</span>` : esc(rk);
-    $("r-ev").textContent = "“" + rd.evidence + "”";
+    $("r-risk").innerHTML = rk === "urgent" ? `<span class="hl-stop">URGENT</span>  “${esc(ag && ag.risk ? ag.risk.evidence : "")}”` : esc(rk);
   },
   cook(t){ this._msg("cook", "Cook", t); },
   alexa(t){ this._msg("alexa", "Alexa+ (simulated)", t); },

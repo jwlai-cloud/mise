@@ -1,8 +1,9 @@
 """Build the interaction demo: a cook, a simulated Alexa+, and the real Mise server.
 
 Nothing on screen is mocked except Alexa herself. Every frame is POSTed to the
-real /ingest and judged by a real vision model (Gemini 2.5 Flash through Mise's
-perception schema and confidence clamp). Every tool call is a real JSON-RPC
+real /ingest and judged by the real Strands agent graph - perceive, a critic
+that runs only when unsure, risk, and a deterministic arbiter - with Gemini 2.5
+Flash as the model. Every tool call is a real JSON-RPC
 request to the real /mcp endpoint, and Alexa's spoken line is the `say` field
 that came back. The Echo Show panel is the real ui://mise/panel page polling
 the same process.
@@ -52,8 +53,8 @@ VOICES = {
 STORY = [
     ("beat", "1 / 5 · the question"),
     ("frame", "f2_soft"),
-    ("narrator", "This is Meez. A phone watches the pan, a vision model reads each frame, "
-                 "and Alexa asks a real MCP server whether the cook can move on."),
+    ("narrator", "This is Meez. A phone watches the pan, a graph of Strands agents reads each "
+                 "frame, and Alexa asks a real MCP server whether the cook can move on."),
     ("cook", "Alexa, can I add the garlic yet?"),
     ("call", "check_doneness"),
     ("narrator", "Well under the gate of point eight. The answer is wait, with a time "
@@ -63,9 +64,9 @@ STORY = [
     ("hold", 1.5),
     ("cook", "How about now?"),
     ("call", "check_doneness"),
-    ("narrator", "Steam. The model still offered a confidence, but it admitted the "
-                 "obstruction, so the clamp caps it at point three five. "
-                 "Meez refuses to judge rather than guess."),
+    ("narrator", "Steam. The perception agent flags it, so the critic agent wakes up to "
+                 "challenge the reading. Confidence ends below the floor, and Meez refuses "
+                 "to judge rather than guess."),
     ("beat", "3 / 5 · closer"),
     ("frame", "f4b_done"),
     ("hold", 1.5),
@@ -162,8 +163,9 @@ def rehearse() -> list[str]:
     for i, (kind, arg) in enumerate(STORY):
         if kind == "frame":
             r = ingest(arg)
-            print(f"  {arg}: {r.get('model_raw', {}).get('confidence')} -> "
-                  f"{r.get('reading', {}).get('confidence')}")
+            print(f"  {arg}: agents {r['agents']['order']}  confidence "
+                  f"{r['model_raw']['confidence']} -> {r['reading']['confidence']}  "
+                  f"risk {r['reading']['risk']}")
         elif kind == "call":
             said.append(alexa_line(arg, call(arg, i)))
             print(f"  {arg}: {said[-1]}")
@@ -222,21 +224,18 @@ def record(said: list[str]):
             if kind == "beat":
                 js(f"stage.beat({json.dumps(arg)})")
             elif kind == "frame":
-                js(f"stage.frame('stills/{arg}_hd.jpg'); stage.flow(['n-ingest']); "
-                   "stage.posting(true)")
+                js(f"stage.frame('stills/{arg}_hd.jpg'); stage.clear(); stage.posting(true)")
                 current["frame"] = arg
                 r = ingest(arg)
-                time.sleep(0.5)
-                js("stage.flow(['n-ingest','n-model'])")
-                time.sleep(0.6)
-                js(f"stage.reading({json.dumps(r['model_raw'])}, {json.dumps(r['reading'])}); "
-                   "stage.flow(['n-model','n-clamp'])")
-                time.sleep(0.6)
-                js("stage.flow(['n-cache']); stage.posting(false)")
+                # Replay the agents in the order Strands actually ran them.
+                js(f"stage.agents({json.dumps(r['agents']['order'])}, 550)")
+                time.sleep(2.3)
+                js(f"stage.reading({json.dumps(r['model_raw'])}, {json.dumps(r['reading'])}, "
+                   f"{json.dumps(r['agents'])}); stage.posting(false)")
             elif kind == "cook" or kind == "narrator":
                 speak(kind, arg, t0)
             elif kind == "call":
-                js("stage.flow(['n-cache','n-gate'])")
+                js("document.getElementById('n-gate').classList.add('on')")
                 resp = call(arg, 100 + i)
                 js(f"stage.tool({json.dumps(arg)}, {{}}, {json.dumps(resp)})")
                 time.sleep(0.5)
@@ -245,7 +244,7 @@ def record(said: list[str]):
                 if got != line:
                     print(f"  ! live answer drifted from rehearsal: {got!r} vs {line!r}")
                 speak("alexa", got, t0)
-                js("stage.flow([])")
+                js("document.getElementById('n-gate').classList.remove('on')")
             elif kind == "hold":
                 time.sleep(arg)
             elif kind == "close":
@@ -310,7 +309,8 @@ def main():
         if not os.environ.get(var):
             sys.exit(f"needs {var} (Gemini perception and TTS)")
     WORK.mkdir(parents=True, exist_ok=True)
-    env = dict(os.environ, PYTHONPATH=str(ROOT / "src"), MISE_VISION_BACKEND="gemini")
+    env = dict(os.environ, PYTHONPATH=str(ROOT / "src"), MISE_VISION_BACKEND="graph",
+               MISE_GRAPH_MODEL="gemini")
     server = subprocess.Popen([sys.executable, "-m", "uvicorn", "mise.app:app",
                                "--port", str(PORT), "--log-level", "warning"],
                               cwd=ROOT, env=env)

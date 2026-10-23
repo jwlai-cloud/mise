@@ -12,6 +12,18 @@ Newest first. **Read this first in any new session.**
 - **`GeminiVision` backend** (`MISE_VISION_BACKEND=gemini`): Gemini 2.5 Flash, same schema,
   same clamp. `/ingest` now returns `model_raw` and the clamped `reading` so the clamp is visible.
 - `spoken()` capitalises model evidence after the verdict lead-in.
+- **The Strands graph now runs on a real model, and the demo goes through it.**
+  `MISE_VISION_BACKEND=graph MISE_GRAPH_MODEL=gemini` drives every agent with Gemini 2.5 Flash via
+  Strands' `GeminiModel` (Vertex, or `GEMINI_API_KEY` for judges). `/ingest` returns which agents
+  ran and what each said; the video shows it. Evidence: `docs/demo/agent-run.md`.
+- **Three bugs the scripted tests hid**, all fixed (FRICTION #11): the frame was never passed to
+  the graph; a per-frame event loop broke the second Gemini call; undescribed/optional schema
+  fields let the model skip evidence and put doneness in `confidence`.
+
+### Corrected this session
+- Until today the Strands graph had **only ever run against a scripted model**, and the first
+  demo video bypassed it with a single Gemini call. Bedrock was blocked and no other model was
+  wired in. That should have been caught in week one; it is the main lesson of this project.
 
 ### Known gaps, recorded rather than hidden
 - Gemini at temperature 0 is not deterministic across processes: the f4b frame read 0.50 one run,
