@@ -112,9 +112,11 @@ produced a better architecture than we would have designed without them.
 
 ## Amazon Bedrock (`bedrock-runtime`)
 
-**What we used it for.** Intended as the perception model behind `ingest_frame`, on `au.*`
-cross-region inference profiles for Australian data residency. **Not yet invoked** — blocked on the
-two items below.
+**What we used it for.** Intended as the perception model behind `ingest_frame` (`BedrockVision`)
+and behind the agent graph (`BedrockModel`). Region is configuration: develop on `us.`/`global.`
+profiles, move to `au.*` for residency if the numbers allow (ADR-0004). **Not yet invoked** —
+blocked on the two items below. For the demo video, perception ran on Gemini instead (see the
+last section).
 
 **What needs work.**
 
@@ -190,10 +192,16 @@ we could not do ourselves, which is the only real test of a managed service.
 
 ## Strands Agents SDK
 
-**What we used it for.** A `BeforeToolCallEvent` steering hook that cancels `advance_step` at the
-tool boundary, so the model cannot talk its way past the gate. Written and unit-tested against a
-stub; **not yet run against the real SDK**, which is why it is declared as an optional `[aws]` extra
-and degrades to absent rather than failing.
+**What we used it for.** Two things, run to different depths.
+
+- **The perception graph runs on the real SDK** (strands-agents 1.61): a `strands.multiagent`
+  `GraphBuilder` graph with a perception agent, a critic on a conditional edge, a parallel risk
+  node and a deterministic arbiter, plus `strands.telemetry` OpenTelemetry spans. It executes in
+  CI against a scripted `Model` provider, so the topology is tested rather than asserted. It has
+  not yet been driven by a real model — `BedrockModel` is wired but Bedrock is blocked.
+- **A `BeforeToolCallEvent` steering hook** that cancels `advance_step` at the tool boundary, so
+  the model cannot talk its way past the gate. Unit-tested against a fake event, not yet inside a
+  live `Agent` loop; it degrades to absent if strands is not installed.
 
 **What worked well.** Steering is the right abstraction for our problem and we adopted it on the
 strength of the concept alone. The distinction between Proceed / Guide / Interrupt maps cleanly onto
@@ -270,8 +278,16 @@ the Alexa+ coverage it already has and spoke the protocol version the track requ
 
 ---
 
-## Playwright and ffmpeg (supporting, non-Amazon)
+## Supporting, non-Amazon: Gemini on Vertex AI, Playwright, ffmpeg
 
-**What we used them for.** Capturing the panel's five states as screenshots, and recording the
-47-second MVP verification video that walks all four verdicts. Both worked first time. Noted here
-only for completeness, since they produced submission artefacts rather than product behaviour.
+**Gemini 2.5 Flash** stood in as the perception model for the demo video while Bedrock was blocked
+(`MISE_VISION_BACKEND=gemini`, same response schema, same confidence clamp). It judged four
+AI-generated stills — generated with `gemini-2.5-flash-image` — through the real `/ingest` path.
+Worth recording honestly: at temperature 0 it still read the same still as 0.50 on one run and 0.70
+on the next, and it first rated a smoking pan `risk: none` until the smoke was made thicker. Neither
+is a measurement; both are reasons the clamp and the refusal exist. **Gemini-TTS** voiced the video.
+
+**Playwright and ffmpeg** recorded the demo from the running system: a stage page drives real
+`/ingest` posts and real JSON-RPC tool calls while the real panel polls beside it. Both worked first
+time. Noted for completeness, since they produced submission artefacts rather than product
+behaviour.
