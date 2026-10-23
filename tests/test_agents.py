@@ -7,7 +7,7 @@ edge and the arbiter are genuinely executed rather than asserted about.
 import asyncio, sys
 sys.path.insert(0, "src")
 from mise.agents import (CriticVerdict, PanReading, RiskReport, ScriptedModel,
-                         arbitrate, build_hot_graph, near_the_gate, run_once)
+                         arbitrate, build_hot_graph, judge_frame, near_the_gate, run_once)
 from mise.gate import decide
 from mise.recipes import SOFFRITTO
 from mise.state import STORE
@@ -118,6 +118,28 @@ def test_a_dead_model_writes_nothing():
     print("graph dead   -> nothing written, view ages into a refusal")
 
 
+def test_every_agent_is_shown_the_frame():
+    # The graph once received only the text prompt - the JPEG was dropped before
+    # invoke - and scripted models cannot notice. A real model judged a pan it
+    # could not see. Each node must get the image block itself.
+    seen = {}
+
+    class Watching(ScriptedModel):
+        def __init__(self, name, payloads):
+            super().__init__(payloads); self.name = name
+
+        async def stream(self, messages, *a, **kw):
+            seen[self.name] = any("image" in block for m in messages for block in m["content"])
+            async for ev in super().stream(messages, *a, **kw):
+                yield ev
+
+    graph = build_hot_graph(Watching("perceive", [STEAMED]),
+                            Watching("critique", [AGREES]), Watching("risk", [NO_RISK]))
+    run(judge_frame(graph, GOAL, b"\xff\xd8fake-jpeg"))
+    assert seen == {"perceive": True, "critique": True, "risk": True}, seen
+    print("graph image  -> perceive, critique and risk all received the frame")
+
+
 for f in (test_the_critic_can_only_lower_confidence,
           test_danger_escalates_and_is_never_lowered,
           test_danger_survives_a_dissenting_critic,
@@ -125,6 +147,7 @@ for f in (test_the_critic_can_only_lower_confidence,
           test_the_critic_only_runs_where_a_mistake_is_expensive,
           test_the_graph_runs_end_to_end_offline,
           test_a_steamed_frame_ends_in_a_refusal_through_the_whole_graph,
-          test_a_dead_model_writes_nothing):
+          test_a_dead_model_writes_nothing,
+          test_every_agent_is_shown_the_frame):
     f()
 print("\nall hot-graph tests passed")

@@ -56,13 +56,25 @@ class PanReading(BaseModel):
     """The perception agent's structured output. Mirrors CookState plus the two
     fields that set the confidence ceiling."""
 
-    view: Literal["clear", "partly_obscured", "obscured", "no_pan"]
-    obstructions: list[str] = Field(default_factory=list)
-    risk: Literal["none", "watch", "urgent"] = "none"
-    stage: str = ""
-    doneness: float = 0.0
-    confidence: float = 0.0
-    evidence: str = ""
+    # Every number is described. Undescribed, a real model conflated the two:
+    # a clear frame of raw onion came back confidence 0.1 - its doneness - and
+    # the system refused to judge a pan it could see perfectly well.
+    view: Literal["clear", "partly_obscured", "obscured", "no_pan"] = Field(
+        description="How well the food can be seen.")
+    obstructions: list[str] = Field(default_factory=list, description=(
+        "What is in the way, e.g. steam, lid, glare, hand, blur. Empty if nothing."))
+    risk: Literal["none", "watch", "urgent"] = Field("none", description=(
+        "urgent for smoke, flame or scorching; watch for ambiguous haze."))
+    stage: str = Field("", description="A few words naming the cooking stage.")
+    doneness: float = Field(0.0, description=(
+        "Progress toward the goal: 0 = raw, 1 = goal fully reached."))
+    confidence: float = Field(0.0, description=(
+        "How sure you are of the doneness number, from what you can see: 1 = clear "
+        "unobstructed view, near 0 = cannot judge. NOT how cooked the food is."))
+    # Required, not defaulted: an optional field is one a real model may skip,
+    # and a reading with no evidence is dropped by validate() - the frame is lost.
+    evidence: str = Field(min_length=1,
+                          description="One sentence of visible evidence a person could check.")
 
 
 class CriticVerdict(BaseModel):
@@ -235,6 +247,39 @@ def bedrock_model(model_id: str | None = None):
     )
 
 
+def gemini_model(model_id: str | None = None):
+    """Gemini on Vertex AI, through Strands' own GeminiModel provider.
+
+    Two ways in. GEMINI_API_KEY (or GOOGLE_API_KEY) from Google AI Studio is
+    the one a judge can get in a minute. Otherwise Vertex AI with a gcloud user
+    token for MISE_GCLOUD_ACCOUNT, billed to MISE_GCLOUD_PROJECT - both
+    required, so no default account or project is ever picked up. The stand-in
+    while Bedrock access is blocked; the graph does not know which provider it
+    is talking to.
+    """
+    import os
+    import subprocess
+
+    from google import genai
+    from google.oauth2.credentials import Credentials
+    from strands.models.gemini import GeminiModel
+
+    key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    acct, proj = os.environ.get("MISE_GCLOUD_ACCOUNT"), os.environ.get("MISE_GCLOUD_PROJECT")
+    if key:
+        client = genai.Client(api_key=key)
+    elif acct and proj:
+        token = subprocess.run(["gcloud", "auth", "print-access-token", "--account", acct],
+                               check=True, capture_output=True, text=True).stdout.strip()
+        client = genai.Client(vertexai=True, project=proj, location="global",
+                              credentials=Credentials(token))
+    else:
+        raise PerceptionError("gemini_model needs GEMINI_API_KEY, or MISE_GCLOUD_ACCOUNT "
+                              "and MISE_GCLOUD_PROJECT for Vertex AI")
+    return GeminiModel(client=client, model_id=model_id or "gemini-2.5-flash",
+                       params={"temperature": 0, "thinking_config": {"thinking_budget": 0}})
+
+
 # ---------- the graph ----------
 
 def build_hot_graph(perceive_model, critique_model=None, risk_model=None,
@@ -268,15 +313,22 @@ def build_hot_graph(perceive_model, critique_model=None, risk_model=None,
     return b.build()
 
 
-async def judge_frame(graph, goal: str) -> Reading:
+async def judge_frame(graph, goal: str, jpeg: bytes | None = None,
+                      trace: dict | None = None) -> Reading:
     """One frame through the graph, arbitrated. Pure - does not touch STORE.
 
     Raises PerceptionError on anything unusable, so the caller can apply the
     rule that holds everywhere on this path: a failure writes NOTHING, and the
     last frame ages until the gate refuses on its own.
     """
+    ask = f"Report this pan against the goal: {goal}"
+    # The frame goes in as an image block. Strands hands the original task to
+    # every downstream node too, so the critic and the risk agent see the same
+    # pixels the perception agent did - not just its description of them.
+    task = ask if jpeg is None else [{"text": ask},
+                                     {"image": {"format": "jpeg", "source": {"bytes": jpeg}}}]
     try:
-        result = await graph.invoke_async(f"Report this pan against the goal: {goal}")
+        result = await graph.invoke_async(task)
     except Exception as exc:
         raise PerceptionError(f"hot graph failed ({type(exc).__name__}): {exc}") from exc
 
@@ -289,7 +341,14 @@ async def judge_frame(graph, goal: str) -> Reading:
         return got if isinstance(got, kind) else None
 
     perception = out("perceive", PanReading)
-    reading = arbitrate(perception, out("critique", CriticVerdict), out("risk", RiskReport))
+    critique, risk = out("critique", CriticVerdict), out("risk", RiskReport)
+    reading = arbitrate(perception, critique, risk)
+    if trace is not None:
+        # What each agent actually said, for a caller that wants to show the
+        # reasoning rather than only its result.
+        trace.update(order=[n.node_id for n in getattr(result, "execution_order", [])],
+                     **{k: v.model_dump() if v else None for k, v in
+                        (("perceive", perception), ("critique", critique), ("risk", risk))})
 
     # Strands traces the mechanics - which agent ran, tokens, tool calls - but
     # nothing about a pan. The trajectory evaluator needs the domain values to
@@ -337,17 +396,35 @@ class GraphVision:
 
     @property
     def graph(self):
-        if self._graph is None:                # built lazily: touches boto3
-            m = bedrock_model()
+        if self._graph is None:                # built lazily: touches the provider SDK
+            import os
+            m = gemini_model() if os.getenv("MISE_GRAPH_MODEL") == "gemini" else bedrock_model()
             self._graph = build_hot_graph(m, m, m, gate_doneness=self._gate)
         return self._graph
 
     def judge(self, jpeg: bytes, goal: str) -> Reading:
         import asyncio
 
-        # ingest_frame already runs us in a worker thread, so there is no loop
-        # in this thread to conflict with.
-        return asyncio.run(judge_frame(self.graph, goal))
+        # One loop for the life of the graph, not asyncio.run per frame: provider
+        # clients bind their HTTP session to the loop that first used them, and
+        # a fresh loop per frame fails the second frame with "Event loop is
+        # closed". ingest_frame holds a lock, so frames never overlap on it.
+        import hashlib
+
+        # ponytail: identical bytes get the identical judgement, as in GeminiVision.
+        # A live camera never repeats bytes; a replayed still must not re-roll.
+        key = hashlib.sha256(jpeg + goal.encode()).hexdigest()
+        cache = self.__dict__.setdefault("_cache", {})
+        if key not in cache:
+            if getattr(self, "_loop", None) is None:
+                self._loop = asyncio.new_event_loop()
+            trace: dict = {}
+            reading = self._loop.run_until_complete(judge_frame(self.graph, goal, jpeg, trace))
+            cache[key] = (trace, reading)
+        trace, reading = cache[key]
+        self.last_trace = trace
+        self.last_raw = trace.get("perceive")     # same shape as a single-model reading
+        return reading
 
 
 async def run_once(graph, goal: str, captured_at: float | None = None) -> Reading | None:

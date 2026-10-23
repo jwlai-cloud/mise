@@ -172,6 +172,9 @@ async def ingest(request):
         raw = getattr(vision.MODEL, "last_raw", None)
         if raw is not None:
             out["model_raw"] = raw
+        trace = getattr(vision.MODEL, "last_trace", None)
+        if trace:
+            out["agents"] = trace                  # which agents ran, and what each said
         out["reading"] = {k: v for k, v in STORE.read().to_dict().items()
                           if k in ("doneness", "confidence", "risk", "evidence", "stage")}
     return JSONResponse(out)
