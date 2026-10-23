@@ -371,11 +371,15 @@
     </div>
 
     <div class="note warn">
-      <strong>Still not executed: a real model.</strong> <code>BedrockModel</code> and
-      <code>BedrockVision.judge</code> are written against a call shape verified in botocore's own
-      service model, but neither has ever been invoked — blocked on an unsubmitted Anthropic
-      use-case form and an IAM grant, neither of which is code. Policies and a preflight that names
-      the exact missing action are in <code>infra/</code>. Nothing is deployed to AWS.
+      <strong>A real model has run — but not Bedrock, and not on a real pan.</strong> For the demo
+      video, <code>GeminiVision</code> (<code>MISE_VISION_BACKEND=gemini</code>, Gemini 2.5 Flash on
+      Vertex) judged four AI-generated stills through the production <code>/ingest</code> path, with
+      the same schema and the same clamp: steam came back at 0.6 and was clamped to 0.35, so the
+      server refused. That is a demonstration, not a measurement — no camera frame, no labelled
+      corpus, and the same still read 0.50 on one run and 0.70 on the next.
+      <code>BedrockModel</code> and <code>BedrockVision.judge</code> have still never been invoked —
+      blocked on an unsubmitted Anthropic use-case form and an IAM grant, neither of which is code.
+      Nothing is deployed to AWS.
     </div>
 
     <div class="note ok">
@@ -806,7 +810,7 @@ when { count(context.corrections_for_step) &gt;= 3 since within 3600 seconds };<
       <p>
         Roughly 37 days, solo, evenings — call it 85 to 100 usable hours with 12 reserved for the
         video and the writeup. The ordering is not preference. Phase 01 comes first because
-        <strong>the differentiating verdict has never once appeared on screen</strong>, and without it
+        <strong>the differentiating verdict had never once appeared on screen</strong>, and without it
         there is no demo to shoot no matter how the rest goes.
       </p>
     </div>
@@ -832,8 +836,8 @@ when { count(context.corrections_for_step) &gt;= 3 since within 3600 seconds };<
         One service actually deployed beats six planned. Film the session-1-vs-session-3 change.</li>
       <li><span class="cost">~6 h</span><b>The hot graph</b>
         Perception, critic, risk, arbiter. Turn on Observability and keep the trace waterfall — it is the proof the critic is conditional rather than decorative.</li>
-      <li><span class="cost">~12 h</span><b>Video and submission</b>
-        Under three minutes, public, showing the MCP server in action. The 47-second capture is the raw material.</li>
+      <li><span class="cost">done</span><b>Video and submission</b>
+        2:04, recorded from the running system by <code>docs/demo/build_interaction.py</code>: a cook, a labelled simulated Alexa+, and the real server. Each still is POSTed to <code>/ingest</code> and judged live; every tool call is real JSON-RPC to <code>/mcp</code>; Alexa speaks the <code>say</code> that came back; the Echo Show panel is the real <code>ui://mise/panel</code>, reached through a postMessage host bridge. All four verdicts' worth of story — wait, refuse, a blocked <code>advance_step</code>, and an unprompted OFF THE HEAT.</li>
     </ol>
 
     <div class="col">
