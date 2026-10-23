@@ -91,7 +91,7 @@ That constraint is also what makes a genuinely agentic design possible rather th
 impossible. The agent is real and it is complex — it simply does not sit in the request
 path. Putting it there would not make the product more agentic; it would make it time out.
 
-**The stack, precisely:**
+**The stack, precisely — what runs today:**
 
 - **MCP Python SDK 2.1** (`MCPServer`), streamable HTTP, `stateless_http=True` on
   `streamable_http_app()`. Verified
@@ -101,20 +101,9 @@ path. Putting it there would not make the product more agentic; it would make it
   marked `_meta.ui.visibility: ["app"]`, which makes it callable by the page and invisible
   to the model. That plus a `setInterval` is how the screen stays alive after the voice
   turn ends — the single most valuable capability we found anywhere in this stack.
-- **Amazon Bedrock**, `au.` cross-region inference profiles for Australian data residency,
-  via Converse with **grammar-constrained structured output** (`outputConfig.textFormat`,
-  `type: json_schema`) so the reading conforms to a schema rather than being asked to.
-- **AgentCore Memory**, `userPreferenceMemoryStrategy`, namespace `cook/{actorId}/hob/`.
-  It learns what *you* mean by translucent on *your* hob from you saying "that was too
-  early". Samsung and GE calibrate to the appliance they sold you; nobody calibrates to
-  your pan.
-- **AgentCore Policy (Dogwood)** — a strict superset of Cedar adding `formerly within`,
-  `since within` and `count`, so a decision can condition on what the agent has already
-  done this session. This is why the gate is a contract and not a suggestion: a model
-  cannot talk its way past a policy that reasons over its own action history.
-- **AgentCore Runtime** as the deployment target. Its MCP contract expects the container
-  at `0.0.0.0:8000/mcp` with `stateless_http=True`, which our server already matched
-  exactly.
+- **Gemini 2.5 Flash on Vertex AI** — the perception backend that actually ran. It judged
+  the demo video's frames through the same response schema and the same confidence clamp,
+  via `MISE_VISION_BACKEND=gemini`. Gemini-TTS voiced the video.
 - **Strands Agents** — a `BeforeToolCallEvent` steering hook that cancels `advance_step`
   at the tool boundary.
 - **Strands Agents** — and this is the part we would show first. The perception loop is a real
@@ -128,11 +117,32 @@ path. Putting it there would not make the product more agentic; it would make it
   OpenTelemetry per node.
 - Python 3.11+, no framework. The gate is 60 lines and has no model in it.
 
+**Written against AWS, not yet run on it.** Each of the following is implemented in code with a
+local fallback, and none has been invoked against AWS.
+
+- **Amazon Bedrock** — the intended perception backend (`BedrockVision`, and `BedrockModel`
+  for the agent graph), via Converse with **grammar-constrained structured output**
+  (`outputConfig.textFormat`, `type: json_schema`) so the reading conforms to a schema rather
+  than being asked to. Region is configuration: develop on `us.`/`global.` profiles, move to
+  `au.` for residency if the numbers allow (ADR-0004).
+- **AgentCore Memory**, `userPreferenceMemoryStrategy`, namespace `cook/{actorId}/hob/`.
+  It learns what *you* mean by translucent on *your* hob from you saying "that was too
+  early". Samsung and GE calibrate to the appliance they sold you; nobody calibrates to
+  your pan.
+- **AgentCore Policy (Dogwood)**, evaluated locally by `policy.py` until deployed — a strict superset of Cedar adding `formerly within`,
+  `since within` and `count`, so a decision can condition on what the agent has already
+  done this session. This is why the gate is a contract and not a suggestion: a model
+  cannot talk its way past a policy that reasons over its own action history.
+- **AgentCore Runtime** as the deployment target, not deployed. Its MCP contract expects the container
+  at `0.0.0.0:8000/mcp` with `stateless_http=True`, which our server already matched
+  exactly.
+
 **What actually runs today, stated plainly:** the gate, the session policy, the full MCP
 surface, the panel, the scripted perception source, and the whole ingest path including
-validation and the confidence clamp. Eleven test suites pass on a clean clone with no AWS
-credentials at all. **Not yet executed:** the Bedrock call itself, and anything deployed
-to AWS. The call shape is verified against botocore's own service model rather than
+validation and the confidence clamp — exercised end to end with a real vision model (Gemini)
+for the demo. Eleven test suites pass on a clean clone with no AWS credentials at all.
+**Not yet executed: anything on AWS.** No Bedrock call, no AgentCore resource, nothing
+deployed. The call shape is verified against botocore's own service model rather than
 recalled, but it has never been invoked — we are blocked on an account-level entitlement
 form and an IAM grant, neither of which is code.
 
@@ -209,7 +219,7 @@ specifically so the first one can never come back.
   emits its own `mise.frame` span.
 - **Five contract bugs found and fixed**, each with a regression test, three of them found
   by adversarial review of our own work rather than by tests failing.
-- **Nine friction-log entries**, three from this week's AWS work — including a Bedrock
+- **Ten friction-log entries**, four from this week's AWS work — including a Bedrock
   entitlement gap that surfaces as `ResourceNotFoundException` rather than an auth error,
   which costs an hour of checking the wrong thing.
 - **The panel's refuse state is the whole pitch in one frame**: the progress meter is
@@ -268,9 +278,11 @@ and that is precisely where a wrong "proceed" will come from.
 
 ## Built with
 
-`python` · `model-context-protocol` · `mcp-apps` · `alexa` · `amazon-bedrock` ·
-`bedrock-agentcore` · `agentcore-memory` · `agentcore-policy` · `agentcore-runtime` ·
-`strands-agents` · `cedar` · `starlette` · `uvicorn` · `pydantic` · `aws`
+`python` · `model-context-protocol` · `mcp-apps` · `alexa` · `strands-agents` ·
+`gemini` · `vertex-ai` · `starlette` · `uvicorn` · `pydantic` · `playwright` · `ffmpeg`
+
+*Designed for, not yet run on:* `amazon-bedrock` · `bedrock-agentcore` · `agentcore-memory` ·
+`agentcore-policy` · `agentcore-runtime`
 
 ## Try it out
 
