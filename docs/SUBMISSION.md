@@ -1,8 +1,9 @@
 # Devpost submission — Mise
 
 **Status: final, 2026-10-23.** Accurate against `master`. Every number here was produced by
-running something; nothing is projected. **Perception accuracy was never measured** — no
-real camera frame has been judged by a real model — so this writeup claims none. The
+running something; nothing is projected. **Perception accuracy was never measured** — a real
+model (Gemini 2.5 Flash) judged four AI-generated stills for the demo video, but no real camera
+frame and no labelled corpus — so this writeup claims none. The
 week-one spike that would have produced those numbers is listed under What's next.
 
 Track: **Alexa+** · Mini challenges: **AWS Builder**, **Open Source**
@@ -304,8 +305,8 @@ returns 406 — that is the protocol requiring an `Accept` header, not a fault.
 
 ## Pre-submission checklist
 
-- [x] No unearned claims — the perception-accuracy placeholders were cut, not filled, because
-      no real frame was ever judged by a real model
+- [x] No unearned claims — the perception-accuracy placeholders were cut, not filled. Four
+      generated stills judged for the video are a demo, not a measurement
 - [ ] Demo video under 3 min, public, showing the MCP server in action
 - [ ] Story, video and diagrams tell the same story with the same numbers
 - [ ] `docs/PRODUCT-FEEDBACK.md` pasted into the product-feedback field (**required**)
