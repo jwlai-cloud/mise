@@ -22,6 +22,7 @@ from starlette.responses import HTMLResponse, JSONResponse
 from starlette.routing import Route
 
 from .server import mcp, panel_state, start_recipe, _session
+from .state import STORE
 from .vision import DEFAULT_SCENARIO, SCENARIOS, ScenarioSource, ingest_frame
 
 log = logging.getLogger(__name__)
@@ -162,8 +163,18 @@ async def ingest(request):
         stop_scenarios("a real frame arrived")
     # A dropped frame is not an error: the view simply ages until the gate
     # refuses. Report it honestly rather than acknowledging a discard.
-    return JSONResponse({"accepted": bool(wrote), "bytes": len(body),
-                         "source": "camera" if _live_camera else SOURCE.name})
+    out = {"accepted": bool(wrote), "bytes": len(body),
+           "source": "camera" if _live_camera else SOURCE.name}
+    if wrote:
+        # What the model said, and what the confidence clamp made of it - so a
+        # client can show the clamp working rather than just its result.
+        from . import vision
+        raw = getattr(vision.MODEL, "last_raw", None)
+        if raw is not None:
+            out["model_raw"] = raw
+        out["reading"] = {k: v for k, v in STORE.read().to_dict().items()
+                          if k in ("doneness", "confidence", "risk", "evidence", "stage")}
+    return JSONResponse(out)
 
 
 app = mcp.streamable_http_app(stateless_http=True, json_response=True,

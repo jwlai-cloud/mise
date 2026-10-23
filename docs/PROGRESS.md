@@ -2,6 +2,23 @@
 
 Newest first. **Read this first in any new session.**
 
+## 2026-10-23 — session 4 (Claude Code)
+
+### Done this session
+- **Interaction demo replaces the slideshow.** `docs/demo/build_interaction.py` records a cook,
+  a simulated Alexa+ and the real server: stills POSTed to `/ingest`, real `check_doneness` /
+  `advance_step` calls, Alexa voicing the returned `say`, the real panel in an Echo Show frame.
+  Two passes — rehearse to learn what the server says, then record live. Three Gemini-TTS voices.
+- **`GeminiVision` backend** (`MISE_VISION_BACKEND=gemini`): Gemini 2.5 Flash, same schema,
+  same clamp. `/ingest` now returns `model_raw` and the clamped `reading` so the clamp is visible.
+- `spoken()` capitalises model evidence after the verdict lead-in.
+
+### Known gaps, recorded rather than hidden
+- Gemini at temperature 0 is not deterministic across processes: the f4b frame read 0.50 one run,
+  0.70 the next. Narration is worded to hold either; the cache only pins a value within a process.
+- The first smoke still was judged `risk: none`. Regenerated with thicker smoke → `urgent`.
+  One generated frame is not evidence the model catches smoke reliably.
+
 ## 2026-09-17 — session 3 (Claude Code)
 
 ### Done this session

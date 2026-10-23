@@ -1,0 +1,188 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Mise — interaction stage</title>
+<style>
+  :root{--bg:#0A0D12;--card:#131820;--line:#252D38;--ink:#EEF2F7;--dim:#8C99AA;--faint:#5B6676;
+        --go:#38B87C;--wait:#E8B23A;--stop:#E5484D;--cool:#6FA8DC;--mono:Menlo,"SF Mono",monospace}
+  *{box-sizing:border-box;margin:0}
+  html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg);color:var(--ink);
+            font-family:-apple-system,"Helvetica Neue",Arial,sans-serif}
+  .top{position:absolute;left:40px;right:40px;top:22px;height:44px;display:flex;align-items:center;gap:18px}
+  .logo{font:800 30px/1 -apple-system,sans-serif;letter-spacing:-.02em}
+  .logo b{color:var(--wait)}
+  .pill{font:600 15px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);
+        border:1px solid var(--line);border-radius:999px;padding:6px 14px}
+  .pill.real{color:var(--go);border-color:#245c43}
+  .grow{flex:1}
+  .beat{font:600 17px var(--mono);color:var(--faint)}
+
+  /* camera */
+  .cam{position:absolute;left:40px;top:86px;width:900px;height:540px;border-radius:18px;overflow:hidden;
+       background:#000;border:1px solid var(--line)}
+  .cam img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .5s}
+  .cam .live{position:absolute;left:18px;top:16px;font:700 15px var(--mono);letter-spacing:.1em;
+             background:rgba(0,0,0,.55);padding:6px 12px;border-radius:8px}
+  .cam .live i{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--stop);
+               margin-right:8px;animation:blink 1.2s infinite}
+  @keyframes blink{50%{opacity:.25}}
+  .cam .note{position:absolute;right:18px;top:16px;font:500 14px var(--mono);color:#cfd6df;
+             background:rgba(0,0,0,.55);padding:6px 12px;border-radius:8px}
+  .cam .post{position:absolute;left:18px;bottom:18px;font:600 16px var(--mono);color:var(--cool);
+             background:rgba(0,0,0,.65);padding:8px 14px;border-radius:8px;opacity:0;transition:opacity .3s}
+  .cam .post.on{opacity:1}
+
+  /* perception trace */
+  .trace{position:absolute;left:40px;top:646px;width:900px;height:392px;background:var(--card);
+         border:1px solid var(--line);border-radius:18px;padding:22px 26px}
+  .h{font:700 14px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:14px}
+  .flow{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+  .node{flex:1;border:2px solid var(--line);border-radius:12px;padding:10px 12px;transition:all .35s;
+        font:600 16px -apple-system,sans-serif;color:var(--dim);text-align:center}
+  .node small{display:block;font:500 12px var(--mono);color:var(--faint);margin-top:3px}
+  .node.on{border-color:var(--cool);color:var(--ink);background:#16222f;box-shadow:0 0 0 4px rgba(111,168,220,.12)}
+  .arrow{color:var(--faint);font:300 26px sans-serif}
+  .rows{display:grid;grid-template-columns:200px 1fr;row-gap:9px;font:500 21px var(--mono)}
+  .rows dt{color:var(--faint)}
+  .rows dd{color:var(--ink)}
+  .clamp s{color:var(--faint)}
+  .clamp b{color:var(--wait)}
+  .hl-stop{color:var(--stop)} .hl-wait{color:var(--wait)} .hl-go{color:var(--go)} .hl-cool{color:var(--cool)}
+
+  /* echo show */
+  .device{position:absolute;left:980px;top:86px;width:900px;height:560px;border-radius:30px;
+          background:#05070a;border:2px solid #222a35;padding:26px 30px 44px}
+  .device iframe{width:840px;height:486px;border:0;border-radius:10px;
+                 display:block}
+  .device .label{position:absolute;bottom:12px;left:0;right:0;text-align:center;
+                 font:600 13px var(--mono);letter-spacing:.14em;color:var(--faint)}
+
+  /* conversation */
+  .chat{position:absolute;left:980px;top:666px;width:900px;height:372px;background:var(--card);
+        border:1px solid var(--line);border-radius:18px;padding:20px 24px;overflow:hidden;
+        display:flex;flex-direction:column;justify-content:flex-end;gap:10px}
+  .msg{max-width:88%;padding:12px 18px;border-radius:16px;font:500 22px/1.35 -apple-system,sans-serif;
+       animation:pop .25s ease-out}
+  @keyframes pop{from{transform:translateY(10px);opacity:0}}
+  .cook{align-self:flex-end;background:#2a3442;border-bottom-right-radius:4px}
+  .alexa{align-self:flex-start;background:#123a52;border-bottom-left-radius:4px}
+  .who{display:block;font:700 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;
+       color:var(--dim);margin-bottom:4px}
+  .tool{align-self:stretch;font:500 16px/1.5 var(--mono);color:#b9c4d2;background:#0d1219;
+        border:1px solid var(--line);border-radius:10px;padding:10px 14px;animation:pop .25s ease-out}
+  .tool .m{color:var(--cool)} .tool .ok{color:var(--go)} .tool .no{color:var(--stop)} .tool .w{color:var(--wait)}
+
+  /* subtitle */
+  .sub{position:absolute;left:0;right:0;bottom:6px;text-align:center;pointer-events:none}
+  .sub span{display:inline-block;max-width:1500px;font:500 26px/1.35 -apple-system,sans-serif;
+            background:rgba(0,0,0,.78);padding:8px 18px;border-radius:10px;opacity:0;transition:opacity .25s}
+  .sub span.on{opacity:1}
+
+  /* cards */
+  .card{position:absolute;inset:0;background:var(--bg);display:none;flex-direction:column;
+        justify-content:center;padding:0 170px;gap:30px;z-index:5}
+  .card.on{display:flex}
+  .card h1{font:800 86px/1.05 -apple-system,sans-serif;letter-spacing:-.02em}
+  .card h1 b{color:var(--wait)}
+  .card p{font:400 34px/1.45 -apple-system,sans-serif;color:#A9B6C6}
+  .card .u{font:600 36px var(--mono);color:var(--cool)}
+</style>
+
+<div class="top">
+  <div class="logo">Mise<b>.</b></div>
+  <span class="pill">simulated Alexa+ experience</span>
+  <span class="pill real">real MCP server</span>
+  <span class="pill real">live perception · Gemini 2.5 Flash</span>
+  <div class="grow"></div>
+  <div class="beat" id="beat"></div>
+</div>
+
+<div class="cam">
+  <img id="frame" alt="">
+  <div class="live"><i></i>PHONE CAMERA · 0.3 Hz</div>
+  <div class="note">frames: AI-generated stills</div>
+  <div class="post" id="post">POST /ingest  →  judged</div>
+</div>
+
+<div class="trace">
+  <div class="h">this frame, through the real ingest path</div>
+  <div class="flow">
+    <div class="node" id="n-ingest">/ingest<small>phone JPEG</small></div><div class="arrow">→</div>
+    <div class="node" id="n-model">vision model<small>Gemini 2.5 Flash</small></div><div class="arrow">→</div>
+    <div class="node" id="n-clamp">clamp<small>view ceiling</small></div><div class="arrow">→</div>
+    <div class="node" id="n-cache">CookState<small>cache</small></div><div class="arrow">→</div>
+    <div class="node" id="n-gate">gate<small>no model</small></div>
+  </div>
+  <dl class="rows">
+    <dt>model saw</dt><dd id="r-view">—</dd>
+    <dt>doneness</dt><dd id="r-done">—</dd>
+    <dt>confidence</dt><dd id="r-conf" class="clamp">—</dd>
+    <dt>risk</dt><dd id="r-risk">—</dd>
+    <dt>evidence</dt><dd id="r-ev" style="font-size:19px">—</dd>
+  </dl>
+</div>
+
+<div class="device">
+  <iframe id="panel" title="Mise panel"></iframe>
+  <div class="label">ECHO SHOW · ui://mise/panel · host bridge → tools/call panel_state every 2 s</div>
+</div>
+
+<div class="chat" id="chat"></div>
+<div class="sub"><span id="sub"></span></div>
+
+<div class="card" id="close">
+  <h1>Every recipe app pushes you forward.<br><b>This one can refuse.</b></h1>
+  <p>Readiness as a refusable tool contract — a self-hosted MCP server for Alexa+,<br>
+     live perception behind a confidence clamp, and a panel that never stops telling the truth.</p>
+  <div class="u">github.com/jwlai-cloud/mise  ·  Apache-2.0</div>
+</div>
+
+<script>
+// The MCP Apps host, simulated: the panel calls tools/call over postMessage and
+// this page forwards it to the real /mcp endpoint, as Alexa's host would.
+window.addEventListener("message", async (e) => {
+  const m = e.data;
+  if (!m || m.method !== "tools/call") return;
+  const r = await fetch("/mcp", {method: "POST", body: JSON.stringify(m), headers: {
+    "Content-Type": "application/json", "Accept": "application/json, text/event-stream",
+    "MCP-Protocol-Version": "2025-11-25"}});
+  e.source.postMessage(await r.json(), "*");
+});
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+window.stage = {
+  panel(url){ $("panel").src = url; },
+  beat(t){ $("beat").textContent = t; },
+  frame(src){ const f = $("frame"); f.style.opacity = 0;
+              setTimeout(() => { f.src = src; f.style.opacity = 1; }, 250); },
+  posting(on){ $("post").classList.toggle("on", on); },
+  flow(ids){ document.querySelectorAll(".node").forEach(n => n.classList.toggle("on", ids.includes(n.id))); },
+  reading(raw, rd){
+    const obs = raw.obstructions && raw.obstructions.length ? " · " + raw.obstructions.join(", ") : "";
+    $("r-view").innerHTML = `${esc(raw.view)}${obs ? `<span class="hl-wait">${esc(obs)}</span>` : ""}`;
+    $("r-done").textContent = Number(rd.doneness).toFixed(2) + "   (gate 0.80)";
+    const a = Number(raw.confidence).toFixed(2), b = Number(rd.confidence).toFixed(2);
+    $("r-conf").innerHTML = a === b ? `${b}` : `<s>${a}</s>  →  <b>${b}</b>   clamped by what it admitted`;
+    const rk = rd.risk;
+    $("r-risk").innerHTML = rk === "urgent" ? `<span class="hl-stop">URGENT</span>` : esc(rk);
+    $("r-ev").textContent = "“" + rd.evidence + "”";
+  },
+  cook(t){ this._msg("cook", "Cook", t); },
+  alexa(t){ this._msg("alexa", "Alexa+ (simulated)", t); },
+  tool(name, args, resp){
+    const d = document.createElement("div"); d.className = "tool";
+    const v = resp.verdict || "", cls = v === "refuse" || v === "abort" || resp.advanced === false ? "no"
+             : v === "wait" ? "w" : "ok";
+    const body = resp.advanced !== undefined
+      ? `advanced <span class="${cls}">${resp.advanced}</span> · ${esc(resp.policy_rule || "")}`
+      : `verdict <span class="${cls}">${esc(v)}</span> · doneness ${resp.doneness} · confidence ${resp.confidence}`;
+    d.innerHTML = `<span class="m">→ tools/call ${esc(name)}</span> ${esc(JSON.stringify(args))}<br>← ${body}`;
+    this._push(d);
+  },
+  _msg(cls, who, t){ const d = document.createElement("div"); d.className = "msg " + cls;
+    d.innerHTML = `<span class="who">${who}</span>${esc(t)}`; this._push(d); },
+  _push(d){ const c = $("chat"); c.appendChild(d); while (c.children.length > 4) c.removeChild(c.firstChild); },
+  sub(t){ const s = $("sub"); if (!t) { s.classList.remove("on"); return; }
+          s.textContent = t; s.classList.add("on"); },
+  close(on){ $("close").classList.toggle("on", on); },
+};
+</script>

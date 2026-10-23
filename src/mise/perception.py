@@ -272,6 +272,84 @@ class BedrockVision:
         return validate(clamp_confidence(raw))
 
 
+class GeminiVision:
+    """Gemini 2.5 Flash on Vertex AI, behind the same seam as BedrockVision.
+
+    Bedrock is the target; this exists because the AWS account could not invoke
+    a model before the deadline, and a perception layer that has never seen a
+    real frame cannot demonstrate anything. Same prompt, same schema, same clamp,
+    same validator - only the transport differs.
+
+    Auth is a gcloud user token for MISE_GCLOUD_ACCOUNT, billed to
+    MISE_GCLOUD_PROJECT. Both required, so no ambient account is picked up.
+    """
+
+    MODEL = "gemini-2.5-flash"
+
+    def __init__(self) -> None:
+        self.account = os.environ.get("MISE_GCLOUD_ACCOUNT")
+        self.project = os.environ.get("MISE_GCLOUD_PROJECT")
+        if not (self.account and self.project):
+            raise PerceptionError("GeminiVision needs MISE_GCLOUD_ACCOUNT and MISE_GCLOUD_PROJECT")
+        self._cache: dict[str, tuple[dict, Reading]] = {}
+
+    def _schema(self) -> dict:
+        return {"type": "OBJECT", "properties": {
+            "view": {"type": "STRING", "enum": list(VIEW_CEILING)},
+            "obstructions": {"type": "ARRAY", "items": {
+                "type": "STRING", "enum": list(OBSTRUCTION_CEILING)}},
+            "risk": {"type": "STRING", "enum": list(VALID_RISK)},
+            "stage": {"type": "STRING"}, "doneness": {"type": "NUMBER"},
+            "confidence": {"type": "NUMBER"}, "evidence": {"type": "STRING"}},
+            "required": ["view", "obstructions", "risk", "stage", "doneness",
+                         "confidence", "evidence"],
+            # Same reason as SCHEMA_JSON: say what you can see before how sure you are.
+            "propertyOrdering": ["view", "obstructions", "risk", "stage", "doneness",
+                                 "confidence", "evidence"]}
+
+    def judge(self, jpeg: bytes, goal: str) -> Reading:
+        import base64
+        import hashlib
+        import json
+        import subprocess
+        import urllib.request
+
+        # ponytail: identical bytes get the identical judgement. A live camera never
+        # sends the same bytes twice, so this only short-circuits replayed frames.
+        key = hashlib.sha256(jpeg + goal.encode()).hexdigest()
+        if key in self._cache:
+            self.last_raw, reading = self._cache[key]
+            return reading
+        try:
+            token = subprocess.run(["gcloud", "auth", "print-access-token", "--account",
+                                    self.account], check=True, capture_output=True,
+                                   text=True).stdout.strip()
+            body = json.dumps({
+                "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT.format(goal=goal)}]},
+                "contents": [{"role": "user", "parts": [
+                    {"inlineData": {"mimeType": "image/jpeg",
+                                    "data": base64.b64encode(jpeg).decode()}},
+                    {"text": f"Report this pan against the goal: {goal}"}]}],
+                "generationConfig": {"temperature": 0, "thinkingConfig": {"thinkingBudget": 0},
+                                     "responseMimeType": "application/json",
+                                     "responseSchema": self._schema()}}).encode()
+            url = ("https://aiplatform.googleapis.com/v1/projects/"
+                   f"{self.project}/locations/global/publishers/google/models/"
+                   f"{self.MODEL}:generateContent")
+            req = urllib.request.Request(url, data=body, headers={
+                "Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+            r = json.load(urllib.request.urlopen(req, timeout=60))
+            raw = json.loads(r["candidates"][0]["content"]["parts"][0]["text"])
+        except PerceptionError:
+            raise
+        except Exception as exc:
+            raise PerceptionError(f"{type(exc).__name__}: {exc}") from exc
+        self.last_raw = raw                         # for the demo's on-screen trace
+        reading = validate(clamp_confidence(dict(raw)))
+        self._cache[key] = (raw, reading)
+        return reading
+
+
 def get_model() -> VisionModel:
     """Pick a backend. Scripted unless a real one is explicitly asked for,
     because the default has to work on a laptop with no AWS config at all.
@@ -291,6 +369,8 @@ def get_model() -> VisionModel:
     if backend == "graph":
         from .agents import GraphVision          # imported late: pulls in strands
         return GraphVision()
+    if backend == "gemini":
+        return GeminiVision()
     return ScriptedVision()
 
 

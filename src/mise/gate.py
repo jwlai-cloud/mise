@@ -30,6 +30,7 @@ class Decision:
         register, and a refusal must never be phrased like a wait.
         """
         r = self.reason.rstrip()
+        r = r[:1].upper() + r[1:]         # model evidence starts lowercase
         if r and r[-1] not in ".!?":      # evidence arrives as a fragment
             r += "."
         if self.verdict == "abort":

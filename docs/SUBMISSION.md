@@ -274,8 +274,12 @@ and that is precisely where a wrong "proceed" will come from.
 ## Try it out
 
 - **Repository:** https://github.com/jwlai-cloud/mise (Apache-2.0)
-- **Demo video:** [YOUTUBE URL — paste after upload] · 2:18, built from the real system by
-  `docs/demo/build_video.py` (`docs/demo/mise-demo.mp4`, shot list in `docs/demo/script.md`)
+- **Demo video:** [YOUTUBE URL — paste after upload] · 2:04, recorded from the real system by
+  `docs/demo/build_interaction.py` (`docs/demo/mise-interaction.mp4`). Alexa+ is simulated and
+  labelled; the pan frames are AI-generated stills. Everything else is live: each frame goes
+  through the real `/ingest` and is judged by Gemini 2.5 Flash through Mise's schema and clamp,
+  every tool call is real JSON-RPC to `/mcp`, Alexa speaks the returned `say`, and the Echo Show
+  panel is the real `ui://mise/panel` calling `panel_state` through a host bridge.
 
 ```bash
 git clone https://github.com/jwlai-cloud/mise.git && cd mise

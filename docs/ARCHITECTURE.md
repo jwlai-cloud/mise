@@ -34,7 +34,7 @@ Last updated 2026-09-16 (session 2, after the hot graph).
 | Panel | `ui/panel.html` | Dual transport: JSON-RPC over `postMessage` in an MCP host, plain fetch in a browser. |
 | Vision loop | `src/mise/vision.py` | `ScenarioSource` (scripted keyframes, all four verdicts, no model) and `ingest_frame()` (real frames). Exactly one of them owns `STORE` at a time. |
 | Hot graph | `src/mise/agents.py` | The Strands multi-agent loop: perception, a conditional critic that may only lower confidence, a parallel risk node, and a deterministic arbiter that is the single writer. Runs offline against `ScriptedModel`. Emits the `mise.frame` span. See ADR-0005. |
-| Perception | `src/mise/perception.py` | The only place a model runs. `ScriptedVision` for offline tests, `BedrockVision` for real frames. Validates every reading and clamps confidence to what the model admitted it could see. |
+| Perception | `src/mise/perception.py` | The only place a model runs. `ScriptedVision` for offline tests, `BedrockVision` for real frames, `GeminiVision` (`MISE_VISION_BACKEND=gemini`, Gemini 2.5 Flash on Vertex, same schema and clamp) — the backend the demo video was judged by while Bedrock access was blocked. Validates every reading and clamps confidence to what the model admitted it could see. |
 | Memory | `src/mise/memory.py` | AgentCore Memory (user-preference strategy, namespace `cook/{actorId}/hob/`). Local JSON fallback. |
 | Policy | `src/mise/policy.py` | Local mirror of the four Dogwood rules; session ledger of gate observations, refusals, corrections. |
 | Steering | `src/mise/steering.py` | Strands `BeforeToolCallEvent` handler guarding `advance_step`. |
