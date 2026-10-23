@@ -21,6 +21,10 @@ console, signed in as an admin, open **CloudShell** (the `>_` icon in the top ba
 press Enter. It checks it is in the right account first, and is safe to re-run. Then do
 step 1 (the form) and step 4 (verify).
 
+**To undo it:** `pbcopy < infra/cloudshell-teardown.sh`, paste into CloudShell as an
+admin. It deletes the `mise-runtime` role and the `MiseDeployer` policy, detaching it from
+`mimir-bedrock` first, and is safe to re-run.
+
 ## Step 1 — the Anthropic use-case form  ·  *you, in the console*
 
 **No IAM policy works around this, and it gates every model call in every
