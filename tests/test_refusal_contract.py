@@ -166,3 +166,21 @@ for f in (test_rule_four_actually_stops_blocking,
           test_the_panel_shows_the_calibrated_gate_immediately):
     f()
 print("all rule-4 and calibration tests passed")
+
+
+def test_a_new_step_starts_unjudged():
+    # The onions' 1.0 once carried into the garlic step and the panel said GO
+    # for "garlic pale gold" with no garlic in the pan.
+    fresh()
+    from mise.server import advance_step
+    STORE.write(stage="onions", doneness=1.0, confidence=0.95, risk="none", evidence="onions done")
+    assert check_doneness().verdict == "proceed"
+    assert advance_step()["advanced"] is True
+    d = check_doneness()
+    assert d.verdict == "refuse", d
+    STORE.write(stage="garlic", doneness=0.3, confidence=0.9, risk="none", evidence="garlic raw")
+    assert check_doneness().verdict == "wait"
+    print(f"new step         -> {d.verdict!r} until a fresh frame: {d.say!r}")
+
+
+test_a_new_step_starts_unjudged()

@@ -396,11 +396,19 @@ class GraphVision:
 
     @property
     def graph(self):
-        if self._graph is None:                # built lazily: touches the provider SDK
+        """A FRESH graph per frame. Strands Agents keep their conversation
+        history across invocations, so a reused graph judges each frame with
+        every earlier frame still in context - the critic repeated its previous
+        verdict word for word on three different pans. The model client is
+        reused; only the agents are rebuilt."""
+        if self._graph is not None:            # injected (tests): caller owns its state
+            return self._graph
+        if getattr(self, "_model", None) is None:   # built lazily: touches the provider SDK
             import os
-            m = gemini_model() if os.getenv("MISE_GRAPH_MODEL") == "gemini" else bedrock_model()
-            self._graph = build_hot_graph(m, m, m, gate_doneness=self._gate)
-        return self._graph
+            self._model = (gemini_model() if os.getenv("MISE_GRAPH_MODEL") == "gemini"
+                           else bedrock_model())
+        m = self._model
+        return build_hot_graph(m, m, m, gate_doneness=self._gate)
 
     def judge(self, jpeg: bytes, goal: str) -> Reading:
         import asyncio

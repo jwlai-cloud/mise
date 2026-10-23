@@ -18,7 +18,7 @@ from typing import Any
 from mcp.server.mcpserver import MCPServer
 from pydantic import BaseModel, Field
 
-from .gate import decide
+from .gate import AWAITING_FRAME, decide
 from .memory import CALIBRATION
 from .policy import LEDGER
 from .steering import guarded_advance
@@ -201,6 +201,14 @@ def advance_step() -> dict[str, Any]:
         }
     _session["step_index"] = min(_session["step_index"] + 1, len(recipe.steps) - 1)
     nxt = recipe.step(_session["step_index"])
+    # The last reading was judged against the OLD goal. Carried over, a pan
+    # that was 1.0 "onions done" read as GO for "garlic pale gold" with no
+    # garlic in it. Clear it: until a fresh frame is judged against this step,
+    # the gate refuses. Risk is left alone - danger is never erased.
+    # ponytail: a frame already in flight can still land with the old goal;
+    # tag readings with their step index if that ever shows up.
+    STORE.write(stage=AWAITING_FRAME, doneness=0.0, confidence=0.0,
+                evidence="I haven't looked at the pan since we moved on.")
     return {"advanced": True, "step": nxt.index, "instruction": nxt.instruction, "goal": nxt.goal}
 
 

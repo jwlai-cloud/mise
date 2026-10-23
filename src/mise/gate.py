@@ -43,6 +43,10 @@ class Decision:
         return f"Go ahead. {r}"
 
 
+# advance_step writes this stage: the cache holds no reading of the new step yet.
+AWAITING_FRAME = "awaiting_frame"
+
+
 def decide(state: CookState, step: Step) -> Decision:
     # 1. Danger first. Always interruptible, never gated on confidence.
     if state.risk == "urgent":
@@ -55,6 +59,8 @@ def decide(state: CookState, step: Step) -> Decision:
             f"I haven't had a clear view of the pan for {int(state.age_seconds)} seconds.",
             evidence=state.evidence,
         )
+    if state.stage == AWAITING_FRAME:
+        return Decision("refuse", state.evidence, evidence=state.evidence)
     if state.confidence < step.min_confidence:
         return Decision(
             "refuse",
