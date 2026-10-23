@@ -109,7 +109,7 @@ protocol error.
 **Task:** run the existing Strands multi-agent graph (perceive → conditional critic + risk →
 arbiter) against a real model for the first time, Gemini 2.5 Flash through `strands.models.gemini`.
 **Severity:** high — each failure either dropped every frame or produced a confident wrong verdict,
-and all three were invisible to a test suite that passed.
+and all four were invisible to a test suite that passed.
 
 **Expected:** swap `ScriptedModel` for `GeminiModel`, get readings. **Actual, in order:**
 
@@ -127,7 +127,13 @@ and all three were invisible to a test suite that passed.
    refused to judge a pan it could see perfectly. *Fix:* `evidence` required with `min_length=1`;
    every numeric field described ("NOT how cooked the food is").
 
-**Workaround:** the fixes above. **Suggestion:** the structured-output docs should say plainly that
+4. **Agents remember every earlier frame.** A Strands `Agent` keeps its conversation history across
+   invocations, so a graph reused across frames judged each pan with all the previous ones in
+   context. The critic returned the same sentence, word for word, for three different images.
+   *Fix:* build a fresh graph per frame, reusing only the model client.
+
+**Workaround:** the fixes above. **Suggestion:** the multi-agent docs should state that graph nodes
+keep agent history between `invoke` calls, and show the per-request pattern. The structured-output docs should say plainly that
 Pydantic field descriptions are the prompt and that defaulted fields are optional to the model;
 the Gemini provider docs should note the client binds to the first event loop. For our own
 process: a scripted model proves topology, never perception — run one real call end to end in

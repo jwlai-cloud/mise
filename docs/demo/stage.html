@@ -175,11 +175,12 @@ window.stage = {
       `  <span style="color:var(--faint);font-size:17px">“${esc(raw.evidence)}”</span>`;
     $("r-done").textContent = Number(rd.doneness).toFixed(2) + "   (gate 0.80)";
     const a = Number(raw.confidence).toFixed(2), b = Number(rd.confidence).toFixed(2);
-    const c = ag && ag.critique;
+    const c = ag && ag.critique, dissent = c && c.would_be_wrong;
     $("r-conf").innerHTML = a === b ? `${b}` :
-      `<s>${a}</s>  →  <b>${b}</b>   ${c ? "lowered by critic + clamp" : "capped by the view clamp"}`;
-    $("r-crit").innerHTML = c ? `<span class="hl-wait">dissents</span> — “${esc(c.reason)}”`
-                              : `<span style="color:var(--faint)">skipped — clear and confident, far from the gate</span>`;
+      `<s>${a}</s>  →  <b>${b}</b>   ${dissent ? "lowered by critic + clamp" : "capped by the view clamp"}`;
+    $("r-crit").innerHTML = !c ? `<span style="color:var(--faint)">skipped — clear and confident, far from the gate</span>`
+      : dissent ? `<span class="hl-wait">dissents</span> — “${esc(c.reason)}”`
+      : `<span class="hl-go">checked, agrees</span> — “${esc(c.reason)}”`;
     const rk = rd.risk;
     $("r-risk").innerHTML = rk === "urgent" ? `<span class="hl-stop">URGENT</span>  “${esc(ag && ag.risk ? ag.risk.evidence : "")}”` : esc(rk);
   },
@@ -189,8 +190,10 @@ window.stage = {
     const d = document.createElement("div"); d.className = "tool";
     const v = resp.verdict || "", cls = v === "refuse" || v === "abort" || resp.advanced === false ? "no"
              : v === "wait" ? "w" : "ok";
-    const body = resp.advanced !== undefined
-      ? `advanced <span class="${cls}">${resp.advanced}</span> · ${esc(resp.policy_rule || "")}`
+    const body = resp.advanced === true
+      ? `advanced <span class="ok">true</span> · step ${resp.step} · “${esc(resp.instruction)}”`
+      : resp.advanced === false
+      ? `advanced <span class="no">false</span> · ${esc(resp.policy_rule || "")}`
       : `verdict <span class="${cls}">${esc(v)}</span> · doneness ${resp.doneness} · confidence ${resp.confidence}`;
     d.innerHTML = `<span class="m">→ tools/call ${esc(name)}</span> ${esc(JSON.stringify(args))}<br>← ${body}`;
     this._push(d);

@@ -20,6 +20,12 @@ Newest first. **Read this first in any new session.**
   the graph; a per-frame event loop broke the second Gemini call; undescribed/optional schema
   fields let the model skip evidence and put doneness in `confidence`.
 
+- **The demo now walks the recipe**: GO on done onions, `advance_step` to the garlic, wait on the
+  new goal, abort when it burns — all four verdicts from the real agents, 2:40.
+- Two more real-run bugs: agents kept history across frames (fresh graph per frame now), and
+  `advance_step` carried the old step's reading into the new one (now cleared; the gate refuses
+  until a fresh frame is judged against the new goal).
+
 ### Corrected this session
 - Until today the Strands graph had **only ever run against a scripted model**, and the first
   demo video bypassed it with a single Gemini call. Bedrock was blocked and no other model was

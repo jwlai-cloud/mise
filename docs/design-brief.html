@@ -378,7 +378,7 @@
       four AI-generated stills through the production <code>/ingest</code> path. The critic woke on
       one frame of four — the steamed lens, where the perception agent admitted it could not see —
       and the server refused. That is a demonstration, not a measurement: no camera frame, no
-      labelled corpus. Running it for real also found three bugs the scripted tests had hidden;
+      labelled corpus. Running it for real also found five bugs the scripted tests had hidden;
       all fixed.
       <code>BedrockModel</code> and <code>BedrockVision.judge</code> have still never been invoked —
       blocked on an unsubmitted Anthropic use-case form and an IAM grant, neither of which is code.
@@ -840,7 +840,7 @@ when { count(context.corrections_for_step) &gt;= 3 since within 3600 seconds };<
       <li><span class="cost">~6 h</span><b>The hot graph</b>
         Perception, critic, risk, arbiter. Turn on Observability and keep the trace waterfall — it is the proof the critic is conditional rather than decorative.</li>
       <li><span class="cost">done</span><b>Video and submission</b>
-        2:13, recorded from the running system by <code>docs/demo/build_interaction.py</code>: a cook, a labelled simulated Alexa+, and the real server. Each still is POSTed to <code>/ingest</code> and judged live by the Strands agent graph; every tool call is real JSON-RPC to <code>/mcp</code>; Alexa speaks the <code>say</code> that came back; the Echo Show panel is the real <code>ui://mise/panel</code>, reached through a postMessage host bridge. Three of the four verdicts — wait, refuse, abort — plus a blocked <code>advance_step</code>. Proceed never appears: the model never judged a still past the gate.</li>
+        2:40, recorded from the running system by <code>docs/demo/build_interaction.py</code>: a cook, a labelled simulated Alexa+, and the real server. Each still is POSTed to <code>/ingest</code> and judged live by the Strands agent graph; every tool call is real JSON-RPC to <code>/mcp</code>; Alexa speaks the <code>say</code> that came back; the Echo Show panel is the real <code>ui://mise/panel</code>, reached through a postMessage host bridge. All four verdicts across two recipe steps: wait, refuse through steam, a blocked skip, then GO and <code>advance_step</code> moving on to the garlic, wait against the new goal, and abort when it burns.</li>
     </ol>
 
     <div class="col">

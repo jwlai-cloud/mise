@@ -113,7 +113,7 @@ path. Putting it there would not make the product more agentic; it would make it
   a risk node running in parallel rather than downstream so danger is never gated on the
   perception agent's confidence, and a **deterministic arbiter** that is the sole writer.
   **It runs against a real model**: in the demo, every frame POSTed to `/ingest` goes through
-  it, and the critic woke on exactly one of four — the steamed lens, where the perception agent
+  it, and the critic woke on exactly one of five — the steamed lens, where the perception agent
   admitted it could not see ([docs/demo/agent-run.md](demo/agent-run.md)). It also runs in CI
   against a scripted model provider, so the topology and the conditional edge are tested on
   every push with no credentials: a clear frame runs `perceive, risk`; a steamed one adds
@@ -215,9 +215,11 @@ specifically so the first one can never come back.
   evidence about the system.*
 - **A multi-agent graph that runs on a real model and in CI.** The same Strands graph that
   judged the demo's frames on Gemini runs in CI against a scripted provider. Running it for real
-  found three bugs the scripted tests could not: the frame was never passed to the agents, an
-  undescribed `confidence` field got the model's doneness, and a fresh event loop per frame
-  broke the second call. Each is fixed; the first has a regression test.
+  found five bugs the scripted tests could not: the frame was never passed to the agents; an
+  undescribed `confidence` field got the model's doneness; a fresh event loop per frame broke
+  the second call; agents kept every earlier frame in their history; and `advance_step` carried
+  the old step's reading into the new one, so done onions read as GO for garlic not yet in the
+  pan. Each is fixed; the first and last have regression tests.
 - **Two evals scoring two different objects.** `abstention.py` scores the *pan* over a labelled
   corpus; `trajectory.py` scores the *agent* over real OTEL spans. Running the second found
   that Strands emits only `gen_ai.*` mechanics and none of the domain values, so the graph now
@@ -292,8 +294,11 @@ and that is precisely where a wrong "proceed" will come from.
 ## Try it out
 
 - **Repository:** https://github.com/jwlai-cloud/mise (Apache-2.0)
-- **Demo video:** https://youtu.be/auhxmEcjYvg · 2:13, recorded from the real system by
-  `docs/demo/build_interaction.py` (`docs/demo/mise-interaction.mp4`). Alexa+ is simulated and
+- **Demo video:** https://youtu.be/auhxmEcjYvg · 2:40, recorded from the real system by
+  `docs/demo/build_interaction.py` (`docs/demo/mise-interaction.mp4`). It walks the recipe:
+  wait on raw onion, refuse through steam, a skip blocked, GO when the onions are done and
+  `advance_step` moving on to the garlic, wait on the new goal, then the garlic burning and
+  OFF THE HEAT unasked — all four verdicts from the real agents. Alexa+ is simulated and
   labelled; the pan frames are AI-generated stills. Everything else is live: each frame goes
   through the real `/ingest` and is judged by the Strands agent graph on Gemini 2.5 Flash,
   every tool call is real JSON-RPC to `/mcp`, Alexa speaks the returned `say`, and the Echo Show

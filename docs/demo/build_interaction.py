@@ -51,7 +51,7 @@ VOICES = {
 # speak; ("call", tool) makes a real MCP call and Alexa speaks its `say`;
 # ("hold", s) lets the panel catch up on camera.
 STORY = [
-    ("beat", "1 / 5 · the question"),
+    ("beat", "1 / 6 · the question"),
     ("frame", "f2_soft"),
     ("narrator", "This is Meez. A phone watches the pan, a graph of Strands agents reads each "
                  "frame, and Alexa asks a real MCP server whether the cook can move on."),
@@ -59,31 +59,40 @@ STORY = [
     ("call", "check_doneness"),
     ("narrator", "Well under the gate of point eight. The answer is wait, with a time "
                  "estimate, not a guess."),
-    ("beat", "2 / 5 · steam on the lens"),
+    ("beat", "2 / 6 · steam on the lens"),
     ("frame", "f3_steam"),
-    ("hold", 1.5),
+    ("hold", 1.0),
     ("cook", "How about now?"),
     ("call", "check_doneness"),
     ("narrator", "Steam. The perception agent flags it, so the critic agent wakes up to "
                  "challenge the reading. Confidence ends below the floor, and Meez refuses "
                  "to judge rather than guess."),
-    ("beat", "3 / 5 · closer"),
-    ("frame", "f4b_done"),
-    ("hold", 1.5),
-    ("cook", "Now?"),
-    ("call", "check_doneness"),
-    ("narrator", "Closer, still under the gate, and it won't round up. A second not-yet "
-                 "inside two minutes is spoken short. The panel keeps the detail."),
-    ("beat", "4 / 5 · trying to skip"),
+    ("beat", "3 / 6 · trying to skip"),
     ("cook", "Alexa, just go to the next step."),
     ("call", "advance_step"),
     ("narrator", "The skip is refused at the tool boundary. No passing observation, "
                  "no next step, whatever the assistant is asked."),
-    ("beat", "5 / 5 · nobody asked"),
-    ("frame", "f5_smoke"),
+    ("beat", "4 / 6 · the gate is met"),
+    ("frame", "f6_onion_done"),
+    ("hold", 1.0),
+    ("cook", "Now?"),
+    ("call", "check_doneness"),
+    ("cook", "Great. Next step."),
+    ("call", "advance_step"),
+    ("narrator", "Translucent, slumped, no colour. The gate is met, so this time the same "
+                 "tool moves the recipe on."),
+    ("beat", "5 / 6 · a new goal"),
+    ("frame", "f7_garlic_in"),
+    ("hold", 1.0),
+    ("cook", "Garlic's in. Is it ready?"),
+    ("call", "check_doneness"),
+    ("narrator", "New step, new goal. The same agents now judge against garlic: pale gold, "
+                 "not browned."),
+    ("beat", "6 / 6 · nobody asked"),
+    ("frame", "f8_garlic_burn"),
     ("hold", 3.5),
-    ("narrator", "Smoke. Nobody asked. The panel polls on its own clock, and danger is "
-                 "never rate-limited or confidence-gated."),
+    ("narrator", "Garlic burns in seconds. Nobody asked. The risk agent flags it, the panel "
+                 "polls on its own clock, and danger is never rate-limited."),
     ("cook", "Alexa?"),
     ("call", "check_doneness"),
     ("hold", 1.0),
@@ -173,8 +182,10 @@ def rehearse() -> list[str]:
 
 
 def alexa_line(tool, resp):
-    # advance_step has no `say`; Alexa relays its reason, which is what the
-    # server would speak through check_doneness anyway.
+    # advance_step has no `say`. Refused, Alexa relays its reason; advanced,
+    # she reads out the next instruction the tool returned.
+    if resp.get("advanced"):
+        return f"Okay. Next step: {resp['instruction'][0].lower()}{resp['instruction'][1:]}"
     return resp.get("say") or resp.get("reason") or ""
 
 
@@ -237,6 +248,9 @@ def record(said: list[str]):
             elif kind == "call":
                 js("document.getElementById('n-gate').classList.add('on')")
                 resp = call(arg, 100 + i)
+                if resp.get("advanced"):
+                    # The old frame shows the old step; stop re-posting it.
+                    current["frame"] = None
                 js(f"stage.tool({json.dumps(arg)}, {{}}, {json.dumps(resp)})")
                 time.sleep(0.5)
                 line = next(lines)
